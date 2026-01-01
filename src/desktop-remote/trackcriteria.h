@@ -87,6 +87,17 @@ namespace PMP
         virtual void accept(TrackCriteriumVisitor& visitor) const = 0;
 
         virtual bool usesUserData() const = 0;
+
+        bool equals(const TrackCriterium& other) const
+        {
+            if (this == &other)
+                return true;
+
+            return equalsImpl(other);
+        }
+
+    protected:
+        virtual bool equalsImpl(const TrackCriterium& other) const = 0;
     };
 
     class ConstantTrackCriterium;
@@ -160,6 +171,13 @@ namespace PMP
 
         bool usesUserData() const override { return false; }
 
+    protected:
+        bool equalsImpl(const TrackCriterium& other) const override
+        {
+            auto* otherConstant = dynamic_cast<const ConstantTrackCriterium*>(&other);
+            return otherConstant && _value == otherConstant->_value;
+        }
+
     private:
         explicit ConstantTrackCriterium(bool value) : _value(value) {}
 
@@ -196,6 +214,14 @@ namespace PMP
         };
 
         bool usesUserData() const override { return true; }
+
+    protected:
+        bool equalsImpl(const TrackCriterium& other) const override
+        {
+            auto* o = dynamic_cast<const TrackLengthPresenceCriterium*>(&other);
+
+            return o && _present == o->_present;
+        }
 
     private:
         explicit TrackLengthPresenceCriterium(bool scorePresent)
@@ -236,6 +262,14 @@ namespace PMP
 
         bool usesUserData() const override { return false; }
 
+    protected:
+        bool equalsImpl(const TrackCriterium& other) const override
+        {
+            auto* o = dynamic_cast<const TrackLengthComparisonCriterium*>(&other);
+
+            return o && _operator == o->_operator && _minutes == o->_minutes;
+        }
+
     private:
         ComparisonOperator _operator;
         int _minutes;
@@ -271,6 +305,14 @@ namespace PMP
         };
 
         bool usesUserData() const override { return true; }
+
+    protected:
+        bool equalsImpl(const TrackCriterium& other) const override
+        {
+            auto* o = dynamic_cast<const TrackScorePresenceCriterium*>(&other);
+
+            return o && _present == o->_present;
+        }
 
     private:
         explicit TrackScorePresenceCriterium(bool scorePresent) : _present(scorePresent){}
@@ -308,6 +350,14 @@ namespace PMP
 
         bool usesUserData() const override { return true; }
 
+    protected:
+        bool equalsImpl(const TrackCriterium& other) const override
+        {
+            auto* o = dynamic_cast<const TrackScoreComparisonCriterium*>(&other);
+
+            return o && _operator == o->_operator && _score == o->_score;
+        }
+
     private:
         ComparisonOperator _operator;
         short _score;
@@ -344,6 +394,14 @@ namespace PMP
 
         bool usesUserData() const override { return true; }
 
+    protected:
+        bool equalsImpl(const TrackCriterium& other) const override
+        {
+            auto* o = dynamic_cast<const TrackLastHeardPresenceCriterium*>(&other);
+
+            return o && _present == o->_present;
+        }
+
     private:
         explicit TrackLastHeardPresenceCriterium(bool isPresent) : _present(isPresent) {}
 
@@ -354,6 +412,8 @@ namespace PMP
     {
         int years { 0 };
         int days { 0 };
+
+        bool operator==(const CompositeDuration&) const = default;
     };
 
     class TrackLastHeardRecentlyCriterium : public TrackCriterium
@@ -379,6 +439,14 @@ namespace PMP
         };
 
         bool usesUserData() const override { return true; }
+
+    protected:
+        bool equalsImpl(const TrackCriterium& other) const override
+        {
+            auto* o = dynamic_cast<const TrackLastHeardRecentlyCriterium*>(&other);
+
+            return o && _duration == o->_duration && _inverted == o->_inverted;
+        }
 
     private:
         CompositeDuration _duration;
@@ -416,6 +484,14 @@ namespace PMP
 
         bool usesUserData() const override { return false; }
 
+    protected:
+        bool equalsImpl(const TrackCriterium& other) const override
+        {
+            auto* o = dynamic_cast<const TrackQueuePresenceCriterium*>(&other);
+
+            return o && _present == o->_present;
+        }
+
     private:
         explicit TrackQueuePresenceCriterium(bool present) : _present(present) {}
 
@@ -452,6 +528,14 @@ namespace PMP
         };
 
         bool usesUserData() const override { return false; }
+
+    protected:
+        bool equalsImpl(const TrackCriterium& other) const override
+        {
+            auto* o = dynamic_cast<const TrackAvailabilityCriterium*>(&other);
+
+            return o && _available == o->_available;
+        }
 
     private:
         explicit TrackAvailabilityCriterium(bool available) : _available(available) {}
@@ -494,6 +578,14 @@ namespace PMP
         };
 
         bool usesUserData() const override { return false; }
+
+    protected:
+        bool equalsImpl(const TrackCriterium& other) const override
+        {
+            auto* o = dynamic_cast<const TrackMetaDataPresenceCriterium*>(&other);
+
+            return o && _metaDataKind == o->_metaDataKind && _present == o->_present;
+        }
 
     private:
         explicit TrackMetaDataPresenceCriterium(TrackMetaDataKind metaDataKind,
@@ -544,6 +636,25 @@ namespace PMP
         };
 
         bool usesUserData() const override;
+
+    protected:
+        bool equalsImpl(const TrackCriterium& other) const override
+        {
+            auto* o = dynamic_cast<const CompositeTrackCriterium*>(&other);
+            if (!o)
+                return false;
+
+            if (_criteria.size() != o->_criteria.size())
+                return false;
+
+            for (unsigned i = 0; i < _criteria.size(); ++i)
+            {
+                if (!_criteria[i]->equals(*o->_criteria[i]))
+                    return false;
+            }
+
+            return true;
+        }
 
     private:
         std::vector<std::unique_ptr<TrackCriterium>> _criteria;
