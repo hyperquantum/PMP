@@ -17,8 +17,8 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_TRACKCRITERIA_H
-#define PMP_TRACKCRITERIA_H
+#ifndef PMP_COMMON_TRACKCRITERIA_H
+#define PMP_COMMON_TRACKCRITERIA_H
 
 #include <QList>
 #include <QMetaType>

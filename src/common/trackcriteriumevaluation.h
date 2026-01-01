@@ -17,8 +17,8 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_TRACKCRITERIUMEVALUATION_H
-#define PMP_TRACKCRITERIUMEVALUATION_H
+#ifndef PMP_COMMON_TRACKCRITERIUMEVALUATION_H
+#define PMP_COMMON_TRACKCRITERIUMEVALUATION_H
 
 #include "trackcriteria.h"
 
