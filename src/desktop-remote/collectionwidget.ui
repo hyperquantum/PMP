@@ -36,15 +36,22 @@
        </property>
       </widget>
      </item>
-     <item row="4" column="0">
+     <item row="1" column="0">
+      <widget class="QLabel" name="filterTracksLabel">
+       <property name="text">
+        <string>Filters:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
       <widget class="QLabel" name="highlightTracksLabel">
        <property name="text">
         <string>Highlight tracks:</string>
        </property>
       </widget>
      </item>
-     <item row="4" column="1">
-      <layout class="QHBoxLayout" name="horizontalLayout">
+     <item row="2" column="1">
+      <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,0,0">
        <item>
         <widget class="QComboBox" name="highlightTracksComboBox">
          <property name="maxVisibleItems">
@@ -55,47 +62,15 @@
        <item>
         <widget class="QPushButton" name="highlightColorButton"/>
        </item>
+       <item>
+        <widget class="QPushButton" name="highlightTracksResetButton"/>
+       </item>
       </layout>
      </item>
-     <item row="1" column="0">
-      <widget class="QLabel" name="filterTracksLabel">
-       <property name="text">
-        <string>Filter:</string>
-       </property>
-      </widget>
-     </item>
      <item row="1" column="1">
-      <widget class="QComboBox" name="filterTracksComboBox">
-       <property name="maxVisibleItems">
-        <number>15</number>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="0">
-      <widget class="QLabel" name="filterTracks2Label">
+      <widget class="QPushButton" name="filterPlaceholder">
        <property name="text">
-        <string>Filter 2:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="1">
-      <widget class="QComboBox" name="filterTracks2ComboBox">
-       <property name="maxVisibleItems">
-        <number>15</number>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="0">
-      <widget class="QLabel" name="filterTracks3Label">
-       <property name="text">
-        <string>Filter 3:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="1">
-      <widget class="QComboBox" name="filterTracks3ComboBox">
-       <property name="maxVisibleItems">
-        <number>15</number>
+        <string/>
        </property>
       </widget>
      </item>
@@ -104,10 +79,10 @@
    <item>
     <widget class="QTableView" name="collectionTableView">
      <property name="contextMenuPolicy">
-      <enum>Qt::CustomContextMenu</enum>
+      <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
      </property>
      <property name="selectionBehavior">
-      <enum>QAbstractItemView::SelectRows</enum>
+      <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
      </property>
     </widget>
    </item>

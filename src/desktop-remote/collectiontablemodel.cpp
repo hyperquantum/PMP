@@ -125,9 +125,7 @@ namespace PMP
             }
         );
 
-        _highlightingTrackJudge.setCriteria(TrackCriterium::NoTracks,
-                                            TrackCriterium::AllTracks,
-                                            TrackCriterium::AllTracks);
+        _highlightingTrackJudge.setCriteria({ TrackCriterium::NoTracks });
         _highlightingTrackJudge.setUserId(userForStatisticsDisplay->userId().valueOr(0));
         connect(
             userForStatisticsDisplay, &UserForStatisticsDisplay::userChanged,
@@ -186,9 +184,7 @@ namespace PMP
 
     void SortedCollectionTableModel::setHighlightCriterium(TrackCriterium criterium)
     {
-        _highlightingTrackJudge.setCriteria(criterium,
-                                            TrackCriterium::AllTracks,
-                                            TrackCriterium::AllTracks);
+        _highlightingTrackJudge.setCriteria({ criterium });
 
         /* notify the outside world that potentially everything has changed */
         markEverythingAsChanged();
@@ -935,12 +931,9 @@ namespace PMP
         setSourceModel(source);
     }
 
-    void FilteredCollectionTableModel::setTrackFilters(TrackCriterium criterium1,
-                                                       TrackCriterium criterium2,
-                                                       TrackCriterium criterium3)
+    void FilteredCollectionTableModel::setTrackFilters(QList<TrackCriterium> criteria)
     {
-        bool changed =
-            _filteringTrackJudge.setCriteria(criterium1, criterium2, criterium3);
+        bool changed = _filteringTrackJudge.setCriteria(criteria);
 
         if (changed)
             invalidateFilter();

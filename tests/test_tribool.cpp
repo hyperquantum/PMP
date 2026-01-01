@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2024-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -155,6 +155,96 @@ void TestTriBool::orOperatorWorksCorrectly()
     QVERIFY((TriBool(true) | TriBool::unknown).isTrue());
     QVERIFY((TriBool(false) | TriBool::unknown).isUnknown());
     QVERIFY((TriBool::unknown | TriBool::unknown).isUnknown());
+}
+
+void TestTriBool::andAssignmentOperatorWorksCorrectly()
+{
+    TriBool b;
+
+    b = true;
+    b &= TriBool(true);
+    QVERIFY(b.isTrue());
+
+    b = true;
+    b &= TriBool(false);
+    QVERIFY(b.isFalse());
+
+    b = true;
+    b &= TriBool::unknown;
+    QVERIFY(b.isUnknown());
+
+    // ===
+
+    b = false;
+    b &= TriBool(true);
+    QVERIFY(b.isFalse());
+
+    b = false;
+    b &= TriBool(false);
+    QVERIFY(b.isFalse());
+
+    b = false;
+    b &= TriBool::unknown;
+    QVERIFY(b.isFalse());
+
+    // ===
+
+    b = TriBool::unknown;
+    b &= TriBool(true);
+    QVERIFY(b.isUnknown());
+
+    b = TriBool::unknown;
+    b &= TriBool(false);
+    QVERIFY(b.isFalse());
+
+    b = TriBool::unknown;
+    b &= TriBool::unknown;
+    QVERIFY(b.isUnknown());
+}
+
+void TestTriBool::orAssignmentOperatorWorksCorrectly()
+{
+    TriBool b;
+
+    b = true;
+    b |= TriBool(true);
+    QVERIFY(b.isTrue());
+
+    b = true;
+    b |= TriBool(false);
+    QVERIFY(b.isTrue());
+
+    b = true;
+    b |= TriBool::unknown;
+    QVERIFY(b.isTrue());
+
+    // ===
+
+    b = false;
+    b |= TriBool(true);
+    QVERIFY(b.isTrue());
+
+    b = false;
+    b |= TriBool(false);
+    QVERIFY(b.isFalse());
+
+    b = false;
+    b |= TriBool::unknown;
+    QVERIFY(b.isUnknown());
+
+    // ===
+
+    b = TriBool::unknown;
+    b |= TriBool(true);
+    QVERIFY(b.isTrue());
+
+    b = TriBool::unknown;
+    b |= TriBool(false);
+    QVERIFY(b.isUnknown());
+
+    b = TriBool::unknown;
+    b |= TriBool::unknown;
+    QVERIFY(b.isUnknown());
 }
 
 QTEST_MAIN(TestTriBool)

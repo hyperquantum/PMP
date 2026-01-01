@@ -17,33 +17,43 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_CLIENT_TRACKSERVERIDREPOSITORY_H
-#define PMP_CLIENT_TRACKSERVERIDREPOSITORY_H
+#ifndef PMP_CLIENT_INACTIVITYTIMER_H
+#define PMP_CLIENT_INACTIVITYTIMER_H
 
-#include "common/filehash.h"
-#include "common/nullable.h"
+#include <QObject>
 
-#include "trackserverid.h"
-
-#include <QHash>
-#include <QReadWriteLock>
+QT_FORWARD_DECLARE_CLASS(QTimer)
 
 namespace PMP::Client
 {
-    class TrackServerIdRepository
+    class InactivityTimer : public QObject
     {
+        Q_OBJECT
     public:
-        TrackServerIdRepository();
+        explicit InactivityTimer(QObject* parent);
 
-        void registerHashWithId(FileHash const& hash, TrackServerId trackServerId);
+        void start();
+        void stop();
 
-        Nullable<TrackServerId> getServerIdForHash(FileHash const& hash) const;
-        Nullable<FileHash> getHashForServerId(TrackServerId trackServerId) const;
+    public Q_SLOTS:
+        void reportActivity();
+
+    Q_SIGNALS:
+        void keepAliveTimeout();
+        void inactivityTimeout();
 
     private:
-        mutable QReadWriteLock _lock;
-        QHash<FileHash, TrackServerId> _hashToServerId;
-        QHash<TrackServerId, FileHash> _serverIdToHash;
+        void onTimerTimeout();
+
+    private:
+        static constexpr int KeepAliveIntervalMs = 30 * 1000;
+        static constexpr int SecondTimeoutStepTimeMs = 1000;
+        static constexpr int SecondTimeoutMaximumTimeMs = 5 * SecondTimeoutStepTimeMs;
+
+        QTimer* _timer;
+        bool _started { false };
+        bool _waitingForSecondTimeout { false };
+        int _secondTimeoutTimePassedMs { 0 };
     };
 }
 #endif

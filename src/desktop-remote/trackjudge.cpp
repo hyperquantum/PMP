@@ -23,6 +23,8 @@
 #include "client/queuehashesmonitor.h"
 #include "client/userdatafetcher.h"
 
+#include <algorithm>
+
 using namespace PMP::Client;
 
 namespace PMP
@@ -35,33 +37,80 @@ namespace PMP
         _userDataFetcher.enableAutoFetchForUser(userId);
     }
 
+    bool TrackJudge::setCriteria(QList<TrackCriterium> criteria)
+    {
+        auto simplified = simplifyCriteria(criteria);
+
+        // a naive comparison is OK, this is mostly for eliminating redundant assignments
+        if (_criteria == simplified)
+            return false;
+
+        _criteria = criteria;
+        return true;
+    }
+
     bool TrackJudge::criteriumUsesUserData() const
     {
-        return usesUserData(_criterium1)
-               || usesUserData(_criterium2)
-               || usesUserData(_criterium3);
+        if (_criteria.isEmpty())
+            return false;
+
+        return
+            std::any_of(
+                _criteria.constBegin(), _criteria.constEnd(),
+                [](auto const& c) { return usesUserData(c); }
+            );
     }
 
     bool TrackJudge::criteriumResultsInAllTracks() const
     {
-        return _criterium1 == TrackCriterium::AllTracks
-                && _criterium2 == TrackCriterium::AllTracks
-               && _criterium3 == TrackCriterium::AllTracks;
+        if (_criteria.isEmpty())
+            return true;
+
+        return
+            std::all_of(
+                _criteria.constBegin(), _criteria.constEnd(),
+                [](auto const& c) { return c == TrackCriterium::AllTracks; }
+            );
     }
 
     TriBool TrackJudge::trackSatisfiesCriteria(CollectionTrackInfo const& track) const
     {
-        auto satifiesCriterium1 = trackSatisfiesCriterium(track, _criterium1);
-        if (satifiesCriterium1.isFalse())
-            return false;
+        TriBool result = true;
 
-        auto satifiesCriterium2 = trackSatisfiesCriterium(track, _criterium2);
-        if (satifiesCriterium2.isFalse())
-            return false;
+        for (auto const& criterium : _criteria)
+        {
+            auto criteriumResult = trackSatisfiesCriterium(track, criterium);
 
-        auto satisfiesCriterium3 = trackSatisfiesCriterium(track, _criterium3);
+            if (criteriumResult.isFalse())
+                return false;
 
-        return satifiesCriterium1 & satifiesCriterium2 & satisfiesCriterium3;
+            result &= criteriumResult;
+        }
+
+        return result;
+    }
+
+    QList<TrackCriterium> TrackJudge::simplifyCriteria(QList<TrackCriterium> criteria)
+    {
+        // we do only the most basic simplification for now
+
+        QList<TrackCriterium> result;
+
+        for (auto const& criterium : criteria)
+        {
+            if (criterium == TrackCriterium::AllTracks)
+                continue; // no need to add it
+
+            if (criterium == TrackCriterium::NoTracks)
+            {
+                // no tracks can match
+                return { TrackCriterium::NoTracks };
+            }
+
+            result.append(criterium);
+        }
+
+        return result;
     }
 
     bool TrackJudge::usesUserData(TrackCriterium criterium)

@@ -51,6 +51,7 @@ set(PMP_CLIENT_SOURCES
     client/dynamicmodecontrollerimpl.cpp
     client/generalcontrollerimpl.cpp
     client/historycontrollerimpl.cpp
+    client/inactivitytimer.cpp
     client/localhashidrepository.cpp
     client/playercontrollerimpl.cpp
     client/queuecontrollerimpl.cpp
@@ -85,6 +86,7 @@ set(PMP_CLIENT_HEADERS
     client/generalcontrollerimpl.h
     client/historycontroller.h
     client/historycontrollerimpl.h
+    client/inactivitytimer.h
     client/playercontroller.h
     client/playercontrollerimpl.h
     client/queuecontroller.h

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -61,12 +61,36 @@ namespace PMP
 
         constexpr TriBool& operator=(TriBool const& other) = default;
 
+        constexpr TriBool& operator &= (TriBool other)
+        {
+            if (isFalse() || other.isFalse())
+                _value = 1; // set to false
+            else if (isTrue() && other.isTrue())
+                _value = 2; // set to true
+            else
+                _value = 0; // set to unknown
+
+            return *this;
+        }
+
+        constexpr TriBool& operator |= (TriBool other)
+        {
+            if (isTrue() || other.isTrue())
+                _value = 2; // set to true
+            else if (isFalse() && other.isFalse())
+                _value = 1; // set to false
+            else
+                _value = 0; // set to unknown
+
+            return *this;
+        }
+
         constexpr TriBool operator ! () const
         {
-            /*  0 -> 0
-                1 -> 2
-                2 -> 1 */
-            return _value == 0 ? TriBool() : TriBool(_value == 1);
+            if (isUnknown())
+                return TriBool(); // return unknown
+
+            return TriBool(isFalse());
         }
 
         friend constexpr TriBool operator == (TriBool a, TriBool b);
@@ -91,51 +115,16 @@ namespace PMP
         return !(a == b);
     }
 
-    /*
-    Bitwise tables for internal values:
-            Bit-AND                 Bit-OR                Bit-XOR
-          | 0 | 1 | 2 |          | 0 | 1 | 2 |          | 0 | 1 | 2 |
-       ---+---+---+---|       ---+---+---+---'       ---+---+---+---'
-        0 | 0 | 0 | 0 |        0 | 0 | 1 | 2 |        0 | 0 | 1 | 2 |
-       ---+---+---+---|       ---+---+---+---'       ---+---+---+---'
-        1 | 0 | 1 | 0 |        1 | 1 | 1 | 3 |        1 | 1 | 0 | 3 |
-       ---+---+---+---|       ---+---+---+---'       ---+---+---+---'
-        2 | 0 | 0 | 2 |        2 | 2 | 3 | 2 |        2 | 2 | 3 | 0 |
-       ---+---+---+---'       ---+---+---+---'       ---+---+---+---'
-
-    Arithmetic tables for internal values:
-              SUM                DIFFERENCE
-          | 0 | 1 | 2 |          | 0 | 1 | 2 |
-       ---+---+---+---|       ---+---+---+---'
-        0 | 0 | 1 | 2 |        0 | 0 | 1 | 2 |
-       ---+---+---+---|       ---+---+---+---'
-        1 | 1 | 2 | 3 |        1 | -1| 0 | 1 |
-       ---+---+---+---|       ---+---+---+---'
-        2 | 2 | 3 | 4 |        2 | -2| -1| 0 |
-       ---+---+---+---'       ---+---+---+---'
-
-    Truth tables for TriBool:
-              AND                    OR
-          | 0 | 1 | 2 |          | 0 | 1 | 2 |
-       ---+---+---+---|       ---+---+---+---'
-        0 | 0 | 1 | 0 |        0 | 0 | 0 | 2 |
-       ---+---+---+---|       ---+---+---+---'
-        1 | 1 | 1 | 1 |        1 | 0 | 1 | 2 |
-       ---+---+---+---|       ---+---+---+---'
-        2 | 0 | 1 | 2 |        2 | 2 | 2 | 2 |
-       ---+---+---+---'       ---+---+---+---'
-    */
-
     constexpr inline TriBool operator & (TriBool a, TriBool b)
     {
-        if ((a._value | b._value) & 1) return false;
-        return (a._value & b._value) ? true : TriBool();
+        a &= b;
+        return a;
     }
 
     constexpr inline TriBool operator | (TriBool a, TriBool b)
     {
-        if ((a._value | b._value) & 2) return true;
-        return (a._value & b._value) ? false : TriBool();
+        a |= b;
+        return a;
     }
 }
 #endif
