@@ -153,10 +153,9 @@ namespace PMP
         _userDataFetcher.enableAutoFetchForUser(userId);
     }
 
-    bool TrackJudge::setCriteria(QList<PredefinedTrackCriterium> criteria)
+    bool TrackJudge::setCriterium(const TrackCriterium& criterium)
     {
-        auto criteriumTree = convertToTrackCriterium(criteria);
-        auto simplifiedTree = TrackCriteriumSimplifier::simplify(*criteriumTree);
+        auto simplifiedTree = TrackCriteriumSimplifier::simplify(criterium);
 
         // a naive comparison is OK, this is mostly for eliminating redundant assignments
         if (_criteriumTree->equals(*simplifiedTree))

@@ -59,7 +59,7 @@ namespace PMP
                                    Client::QueueHashesMonitor* queueHashesMonitor,
                                    UserForStatisticsDisplay* userForStatisticsDisplay);
 
-        void setHighlightCriterium(PredefinedTrackCriterium criterium);
+        void setHighlightCriterium(const TrackCriterium& criterium);
         int highlightColorIndex() const;
 
         void sortByTitle();
@@ -162,7 +162,7 @@ namespace PMP
                                      Client::QueueHashesMonitor* queueHashesMonitor,
                                      UserForStatisticsDisplay* userForStatisticsDisplay);
 
-        void setTrackFilters(QList<PredefinedTrackCriterium> criteria);
+        void setTrackFilters(const TrackCriterium& criterium);
 
         virtual void sort(int column, Qt::SortOrder order = Qt::AscendingOrder);
 

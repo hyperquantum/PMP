@@ -55,7 +55,7 @@ namespace PMP
             return _userId == userId && _haveUserId;
         }
 
-        bool setCriteria(QList<PredefinedTrackCriterium> criteria);
+        bool setCriterium(const TrackCriterium& criterium);
 
         bool criteriumUsesUserData() const;
         bool criteriumResultsInAllTracks() const;

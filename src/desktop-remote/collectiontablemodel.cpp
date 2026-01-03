@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2016-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -125,7 +125,7 @@ namespace PMP
             }
         );
 
-        _highlightingTrackJudge.setCriteria({ PredefinedTrackCriterium::NoTracks });
+        _highlightingTrackJudge.setCriterium(*ConstantTrackCriterium::noTracksMatch());
         _highlightingTrackJudge.setUserId(userForStatisticsDisplay->userId().valueOr(0));
         connect(
             userForStatisticsDisplay, &UserForStatisticsDisplay::userChanged,
@@ -182,9 +182,10 @@ namespace PMP
         addWhenModelEmpty(collectionWatcher.getCollection().values());
     }
 
-    void SortedCollectionTableModel::setHighlightCriterium(PredefinedTrackCriterium criterium)
+    void SortedCollectionTableModel::setHighlightCriterium(
+        const TrackCriterium& criterium)
     {
-        _highlightingTrackJudge.setCriteria({ criterium });
+        _highlightingTrackJudge.setCriterium(criterium);
 
         /* notify the outside world that potentially everything has changed */
         markEverythingAsChanged();
@@ -931,9 +932,9 @@ namespace PMP
         setSourceModel(source);
     }
 
-    void FilteredCollectionTableModel::setTrackFilters(QList<PredefinedTrackCriterium> criteria)
+    void FilteredCollectionTableModel::setTrackFilters(const TrackCriterium& criterium)
     {
-        bool changed = _filteringTrackJudge.setCriteria(criteria);
+        bool changed = _filteringTrackJudge.setCriterium(criterium);
 
         if (changed)
             invalidateFilter();

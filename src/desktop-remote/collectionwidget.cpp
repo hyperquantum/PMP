@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2016-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -150,18 +150,21 @@ namespace PMP
 
     void CollectionWidget::onFiltersChanged()
     {
-        auto criteria = _filtersListWidget->criteria();
-
-        _collectionDisplayModel->setTrackFilters(criteria);
+        _collectionDisplayModel->setTrackFilters(_filtersListWidget->criterium());
     }
 
     void CollectionWidget::onHighlightCriteriumChanged()
     {
-        auto criterium = _highlightingCriteriumPicker->criterium();
+        bool nothingToHighlight =
+            _highlightingCriteriumPicker->criterium().equals(
+                *ConstantTrackCriterium::noTracksMatch()
+            );
 
-        _colorSwitcher->setVisible(criterium != PredefinedTrackCriterium::NoTracks);
+        _colorSwitcher->setVisible(!nothingToHighlight);
 
-        _collectionSourceModel->setHighlightCriterium(criterium);
+        _collectionSourceModel->setHighlightCriterium(
+            _highlightingCriteriumPicker->criterium()
+        );
     }
 
     void CollectionWidget::highlightColorIndexChanged()
@@ -268,7 +271,7 @@ namespace PMP
         _ui->filterPlaceholder->setVisible(false);
 
         connect(
-            _filtersListWidget, &FiltersListWidget::criteriaChanged,
+            _filtersListWidget, &FiltersListWidget::criteriumChanged,
             this, [this]() { onFiltersChanged(); }
         );
 
@@ -319,9 +322,7 @@ namespace PMP
         );
 
         updateColors(/* force: */ true);
-
-        auto highlistingCriterium = _highlightingCriteriumPicker->criterium();
-        _colorSwitcher->setVisible(highlistingCriterium != PredefinedTrackCriterium::NoTracks);
+        onHighlightCriteriumChanged();
     }
 
     void CollectionWidget::updateColors(bool force)
@@ -340,7 +341,8 @@ namespace PMP
 
     FilterPickerWidget::FilterPickerWidget(PredefinedTrackCriterium criteriumForEmpty,
                                            QString captionForEmpty)
-        : _criterium(criteriumForEmpty)
+     : _predefinedCriterium(criteriumForEmpty),
+       _criterium(convertToTrackCriterium(criteriumForEmpty))
     {
         _comboBox = new QComboBox();
 
@@ -355,11 +357,14 @@ namespace PMP
             this,
             [this]()
             {
-                auto criterium = _comboBox->currentData().value<PredefinedTrackCriterium>();
-                if (_criterium == criterium)
+                auto predefinedCriterium =
+                    _comboBox->currentData().value<PredefinedTrackCriterium>();
+
+                if (_predefinedCriterium == predefinedCriterium)
                     return;
 
-                _criterium = criterium;
+                _predefinedCriterium = predefinedCriterium;
+                _criterium = convertToTrackCriterium(predefinedCriterium);
                 Q_EMIT criteriumChanged();
             }
         );
@@ -439,9 +444,10 @@ namespace PMP
     // =============================================================== //
 
     FilterLineWidget::FilterLineWidget()
-        : _criterium(PredefinedTrackCriterium::AllTracks)
     {
-        _filterPicker = new FilterPickerWidget(PredefinedTrackCriterium::AllTracks, tr("(empty)"));
+        _filterPicker = new FilterPickerWidget(PredefinedTrackCriterium::AllTracks,
+                                               tr("(empty)"));
+        _criterium = _filterPicker->criterium().clone();
         _deleteButton = new QPushButton();
         _resetButton = new QPushButton();
 
@@ -457,12 +463,11 @@ namespace PMP
         _resetButton->setIcon(style()->standardIcon(QStyle::SP_LineEditClearButton));
         _resetButton->setToolTip(tr("Clear filter"));
 
-        _criterium = _filterPicker->criterium();
         connect(
             _filterPicker, &FilterPickerWidget::criteriumChanged,
             [this]()
             {
-                _criterium = _filterPicker->criterium();
+                _criterium = _filterPicker->criterium().clone();
                 Q_EMIT criteriumChanged();
             }
         );
@@ -481,6 +486,7 @@ namespace PMP
     // =============================================================== //
 
     FiltersListWidget::FiltersListWidget()
+     : _criterium(ConstantTrackCriterium::allTracksMatch())
     {
         _verticalLayout = new QVBoxLayout(this);
         _verticalLayout->setContentsMargins(0, 0, 0, 0);
@@ -509,19 +515,6 @@ namespace PMP
         );
     }
 
-    QList<PredefinedTrackCriterium> FiltersListWidget::criteria() const
-    {
-        QList<PredefinedTrackCriterium> result;
-        result.reserve(_filters.size());
-
-        for (auto const* filterLine : _filters)
-        {
-            result << filterLine->criterium();
-        }
-
-        return result;
-    }
-
     void FiltersListWidget::addFilterLine()
     {
         auto* filter = new FilterLineWidget();
@@ -530,13 +523,15 @@ namespace PMP
         _verticalLayout->insertWidget(index, filter);
 
         _filters.append(filter);
+        rebuildCriterium();
 
         connect(
             filter, &FilterLineWidget::criteriumChanged,
             this,
             [this]()
             {
-                Q_EMIT criteriaChanged();
+                rebuildCriterium();
+                Q_EMIT criteriumChanged();
             }
         );
 
@@ -555,8 +550,21 @@ namespace PMP
                 _filters.removeAt(index);
                 filter->deleteLater();
 
-                Q_EMIT criteriaChanged();
+                rebuildCriterium();
+                Q_EMIT criteriumChanged();
             }
         );
+    }
+
+    void FiltersListWidget::rebuildCriterium()
+    {
+        auto compositeCriterium = std::make_unique<CompositeTrackCriterium>();
+
+        for (auto const* filterLine : _filters)
+        {
+            compositeCriterium->add(filterLine->criterium().clone());
+        }
+
+        _criterium = std::move(compositeCriterium);
     }
 }
