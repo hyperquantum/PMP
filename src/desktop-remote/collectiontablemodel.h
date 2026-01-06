@@ -23,7 +23,6 @@
 #include "common/filehash.h"
 #include "common/nullable.h"
 #include "common/playerstate.h"
-#include "common/trackcriteria.h"
 
 #include "client/collectiontrackinfo.h"
 #include "client/searchquery.h"
@@ -48,6 +47,7 @@ namespace PMP::Client
 
 namespace PMP
 {
+    class TrackCriterium;
     class UserForStatisticsDisplay;
 
     class SortedCollectionTableModel : public QAbstractTableModel
