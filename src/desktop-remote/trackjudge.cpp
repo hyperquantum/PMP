@@ -157,7 +157,8 @@ namespace PMP
     {
         auto simplifiedTree = TrackCriteriumSimplifier::simplify(criterium);
 
-        // a naive comparison is OK, this is mostly for eliminating redundant assignments
+        /* Checking for structural equality is sufficient; this is mostly for eliminating
+           redundant assignments */
         if (_criteriumTree->equals(*simplifiedTree))
             return false;
 
