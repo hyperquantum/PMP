@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2016-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -47,6 +47,7 @@ namespace PMP::Client
 
 namespace PMP
 {
+    class TrackCriterium;
     class UserForStatisticsDisplay;
 
     class SortedCollectionTableModel : public QAbstractTableModel
@@ -58,7 +59,7 @@ namespace PMP
                                    Client::QueueHashesMonitor* queueHashesMonitor,
                                    UserForStatisticsDisplay* userForStatisticsDisplay);
 
-        void setHighlightCriterium(TrackCriterium criterium);
+        void setHighlightCriterium(const TrackCriterium& criterium);
         int highlightColorIndex() const;
 
         void sortByTitle();
@@ -161,7 +162,7 @@ namespace PMP
                                      Client::QueueHashesMonitor* queueHashesMonitor,
                                      UserForStatisticsDisplay* userForStatisticsDisplay);
 
-        void setTrackFilters(QList<TrackCriterium> criteria);
+        void setTrackFilters(const TrackCriterium& criterium);
 
         virtual void sort(int column, Qt::SortOrder order = Qt::AscendingOrder);
 

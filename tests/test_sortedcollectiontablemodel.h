@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2023-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -116,6 +116,7 @@ class UserDataFetcherMock : public UserDataFetcher
 public:
     void enableAutoFetchForUser(quint32 userId) override;
 
+    bool checkHaveHashDataForUser(quint32 userId, LocalHashId hashId) override;
     HashData const* getHashDataForUser(quint32 userId,
                                        PMP::Client::LocalHashId hashId) override;
 };

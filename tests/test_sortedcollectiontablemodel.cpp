@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2023-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -503,6 +503,13 @@ void UserForStatisticsDisplayMock::setPublic()
 void UserDataFetcherMock::enableAutoFetchForUser(quint32 userId)
 {
     Q_UNUSED(userId)
+}
+
+bool UserDataFetcherMock::checkHaveHashDataForUser(quint32 userId, LocalHashId hashId)
+{
+    Q_UNUSED(userId)
+    Q_UNUSED(hashId)
+    NOT_IMPLEMENTED
 }
 
 const UserDataFetcher::HashData* UserDataFetcherMock::getHashDataForUser(quint32 userId,

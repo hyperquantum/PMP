@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2026, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,23 +17,21 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <QMetaType>
+#ifndef PMP_TESTTRACKCRITERIUMSIMPLIFICATION_H
+#define PMP_TESTTRACKCRITERIUMSIMPLIFICATION_H
 
-namespace PMP
+#include <QObject>
+
+class TestTrackCriteriumSimplification : public QObject
 {
-    /** Utility object to automatically do the qRegisterMetaType calls at program
-     *  startup */
-    class DesktopRemoteMetatypesInit
-    {
-    protected:
-        DesktopRemoteMetatypesInit()
-        {
-            // no metatypes to register at this time
-        }
-
-    private:
-        static DesktopRemoteMetatypesInit GlobalVariable;
-    };
-
-    DesktopRemoteMetatypesInit DesktopRemoteMetatypesInit::GlobalVariable;
-}
+    Q_OBJECT
+private Q_SLOTS:
+    void allTracksSimplifiedToAllTracks();
+    void noTracksSimplifiedToNoTracks();
+    void emptyCompositeSimplifiedToAllTracks();
+    void compositeOnlyConsistingOfMultipleAllTracksSimplifiedToAllTracks();
+    void compositeContainingOneNoTracksSimplifiedToNoTracks();
+    void compositeIsSimplifiedToItsOneMemberThatMatters();
+    void compositeIsSimplifiedByRemovingAllTracksMembers();
+};
+#endif
