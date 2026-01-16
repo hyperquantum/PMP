@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2025, Kevin André <hyperquantum@gmail.com>
+# Copyright (C) 2011-2026, Kevin André <hyperquantum@gmail.com>
 #
 # This file is part of PMP (Party Music Player).
 #
@@ -35,6 +35,9 @@ set(PMP_COMMON_SOURCES
     common/searchutil.cpp
     common/startstopeventstatus.cpp
     common/tagdata.cpp
+    common/trackcriteria.cpp
+    common/trackcriteriumevaluation.cpp
+    common/trackcriteriumsimplification.cpp
     common/tribool.cpp
     common/util.cpp
     common/versioninfo.cpp

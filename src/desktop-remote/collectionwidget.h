@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2016-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,6 +19,8 @@
 
 #ifndef PMP_COLLECTIONWIDGET_H
 #define PMP_COLLECTIONWIDGET_H
+
+#include "common/trackcriteria.h"
 
 #include <QWidget>
 
@@ -46,7 +48,6 @@ namespace PMP
     class FiltersListWidget;
     class SearchData;
     class SortedCollectionTableModel;
-    enum class TrackCriterium;
     class UserForStatisticsDisplay;
     class WaitingSpinnerWidget;
 
@@ -94,21 +95,22 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        FilterPickerWidget(TrackCriterium criteriumForEmpty, QString captionForEmpty);
+        FilterPickerWidget(PredefinedTrackCriterium criteriumForEmpty, QString captionForEmpty);
 
         void clearCriterium();
-        TrackCriterium criterium() const { return _criterium; }
+        const TrackCriterium& criterium() const { return *_criterium; }
 
     Q_SIGNALS:
         void criteriumChanged();
 
     private:
         void fillTrackCriteriaComboBox(QComboBox* comboBox,
-                                       TrackCriterium criteriumForEmpty,
+                                       PredefinedTrackCriterium criteriumForEmpty,
                                        QString captionForEmpty);
 
         QComboBox* _comboBox;
-        TrackCriterium _criterium;
+        PredefinedTrackCriterium _predefinedCriterium;
+        std::unique_ptr<TrackCriterium> _criterium;
     };
 
     class FilterLineWidget : public QWidget
@@ -117,7 +119,7 @@ namespace PMP
     public:
         FilterLineWidget();
 
-        TrackCriterium criterium() const { return _criterium; }
+        const TrackCriterium& criterium() const { return *_criterium; }
 
     Q_SIGNALS:
         void criteriumChanged();
@@ -127,7 +129,7 @@ namespace PMP
         FilterPickerWidget* _filterPicker;
         QPushButton* _deleteButton;
         QPushButton* _resetButton;
-        TrackCriterium _criterium;
+        std::unique_ptr<TrackCriterium> _criterium;
     };
 
     class FiltersListWidget : public QWidget
@@ -136,17 +138,19 @@ namespace PMP
     public:
         FiltersListWidget();
 
-        QList<TrackCriterium> criteria() const;
+        const TrackCriterium& criterium() const { return *_criterium; }
 
     Q_SIGNALS:
-        void criteriaChanged();
+        void criteriumChanged();
 
     private:
         void addFilterLine();
+        void rebuildCriterium();
 
         QPushButton* _addButton;
         QVBoxLayout* _verticalLayout;
         QList<FilterLineWidget*> _filters;
+        std::unique_ptr<TrackCriterium> _criterium;
     };
 }
 #endif

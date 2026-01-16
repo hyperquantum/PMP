@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -45,6 +45,7 @@ namespace PMP::Client
 
         virtual void enableAutoFetchForUser(quint32 userId) = 0;
 
+        virtual bool checkHaveHashDataForUser(quint32 userId, LocalHashId hashId) = 0;
         virtual HashData const* getHashDataForUser(quint32 userId,
                                                    LocalHashId hashId) = 0;
 
@@ -62,6 +63,7 @@ namespace PMP::Client
 
         void enableAutoFetchForUser(quint32 userId) override;
 
+        bool checkHaveHashDataForUser(quint32 userId, LocalHashId hashId) override;
         HashData const* getHashDataForUser(quint32 userId, LocalHashId hashId) override;
 
     private Q_SLOTS:

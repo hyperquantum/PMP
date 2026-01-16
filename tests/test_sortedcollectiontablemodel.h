@@ -116,6 +116,7 @@ class UserDataFetcherMock : public UserDataFetcher
 public:
     void enableAutoFetchForUser(quint32 userId) override;
 
+    bool checkHaveHashDataForUser(quint32 userId, LocalHashId hashId) override;
     HashData const* getHashDataForUser(quint32 userId,
                                        PMP::Client::LocalHashId hashId) override;
 };

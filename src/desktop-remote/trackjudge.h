@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2016-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,13 +20,10 @@
 #ifndef PMP_TRACKJUDGE_H
 #define PMP_TRACKJUDGE_H
 
+#include "common/trackcriteria.h"
 #include "common/tribool.h"
 
-#include <QDateTime>
 #include <QList>
-#include <QMetaType>
-
-#include <functional>
 
 namespace PMP::Client
 {
@@ -37,55 +34,17 @@ namespace PMP::Client
 
 namespace PMP
 {
-    enum class TrackCriterium
-    {
-        AllTracks = 0,
-        NoTracks,
-        NeverHeard,
-        NotHeardInLast5Years,
-        NotHeardInLast3Years,
-        NotHeardInLast2Years,
-        NotHeardInLastYear,
-        NotHeardInLast180Days,
-        NotHeardInLast90Days,
-        NotHeardInLast30Days,
-        NotHeardInLast10Days,
-        HeardAtLeastOnce,
-        WithoutScore,
-        WithScore,
-        ScoreLessThan30,
-        ScoreLessThan50,
-        ScoreAtLeast80,
-        ScoreAtLeast85,
-        ScoreAtLeast90,
-        ScoreAtLeast95,
-        LengthLessThanOneMinute,
-        LengthAtLeastOneMinute,
-        LengthLessThanTwoMinutes,
-        LengthAtLeastTwoMinutes,
-        LengthLessThanThreeMinutes,
-        LengthAtLeastThreeMinutes,
-        LengthLessThanFourMinutes,
-        LengthAtLeastFourMinutes,
-        LengthLessThanFiveMinutes,
-        LengthAtLeastFiveMinutes,
-        NotInTheQueue,
-        InTheQueue,
-        WithoutTitle,
-        WithoutArtist,
-        WithoutAlbum,
-        NoLongerAvailable,
-    };
-
     class TrackJudge
     {
     public:
         TrackJudge(Client::UserDataFetcher& userDataFetcher,
                    Client::QueueHashesMonitor& queueHashesMonitor)
-         : _userId(0),
-           _haveUserId(false),
+         : _criteriumTree(ConstantTrackCriterium::allTracksMatch()),
            _userDataFetcher(userDataFetcher),
-           _queueHashesMonitor(queueHashesMonitor)
+           _queueHashesMonitor(queueHashesMonitor),
+           _userId(0),
+           _haveUserId(false),
+           _criteriumTreeMatchesAllTracks(true)
         {
             //
         }
@@ -96,7 +55,7 @@ namespace PMP
             return _userId == userId && _haveUserId;
         }
 
-        bool setCriteria(QList<TrackCriterium> criteria);
+        bool setCriterium(const TrackCriterium& criterium);
 
         bool criteriumUsesUserData() const;
         bool criteriumResultsInAllTracks() const;
@@ -104,42 +63,14 @@ namespace PMP
         TriBool trackSatisfiesCriteria(Client::CollectionTrackInfo const& track) const;
 
     private:
-        static QList<TrackCriterium> simplifyCriteria(QList<TrackCriterium> criteria);
-        static bool usesUserData(TrackCriterium criterium);
-        static bool isTextFieldEmpty(QString contents);
+        class EvaluationContext;
 
-        TriBool trackSatisfiesCriterium(Client::CollectionTrackInfo const& track,
-                                        TrackCriterium criterium) const;
-
-        TriBool trackSatisfiesScoreCriterium(Client::CollectionTrackInfo const& track,
-                              std::function<TriBool(int)> scorePermillageEvaluator) const;
-
-        TriBool trackSatisfiesLastHeardDateCriterium(
-                                   Client::CollectionTrackInfo const& track,
-                                   std::function<TriBool(QDateTime)> dateEvaluator) const;
-
-        TriBool trackSatisfiesNotHeardInTheLastXDaysCriterium(
-                                                 Client::CollectionTrackInfo const& track,
-                                                 int days) const;
-
-        TriBool trackSatisfiesNotHeardInTheLastXYearsCriterium(
-                                                 Client::CollectionTrackInfo const& track,
-                                                 int years) const;
-
-        TriBool trackLengthLessThanXMinutes(Client::CollectionTrackInfo const& track,
-                                            int minutes) const;
-
-        TriBool trackLengthAtLeastXMinutes(Client::CollectionTrackInfo const& track,
-                                           int minutes) const;
-
-        QList<TrackCriterium> _criteria;
-        quint32 _userId;
-        bool _haveUserId;
+        std::unique_ptr<TrackCriterium> _criteriumTree;
         Client::UserDataFetcher& _userDataFetcher;
         Client::QueueHashesMonitor& _queueHashesMonitor;
+        quint32 _userId;
+        bool _haveUserId;
+        bool _criteriumTreeMatchesAllTracks;
     };
 }
-
-Q_DECLARE_METATYPE(PMP::TrackCriterium)
-
 #endif

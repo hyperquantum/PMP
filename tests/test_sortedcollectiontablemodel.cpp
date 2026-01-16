@@ -505,6 +505,13 @@ void UserDataFetcherMock::enableAutoFetchForUser(quint32 userId)
     Q_UNUSED(userId)
 }
 
+bool UserDataFetcherMock::checkHaveHashDataForUser(quint32 userId, LocalHashId hashId)
+{
+    Q_UNUSED(userId)
+    Q_UNUSED(hashId)
+    NOT_IMPLEMENTED
+}
+
 const UserDataFetcher::HashData* UserDataFetcherMock::getHashDataForUser(quint32 userId,
                                                                        LocalHashId hashId)
 {
