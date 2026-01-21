@@ -24,10 +24,7 @@
 
 #include <QWidget>
 
-QT_FORWARD_DECLARE_CLASS(QComboBox)
 QT_FORWARD_DECLARE_CLASS(QMenu)
-QT_FORWARD_DECLARE_CLASS(QPushButton)
-QT_FORWARD_DECLARE_CLASS(QVBoxLayout)
 
 namespace Ui
 {
@@ -89,68 +86,6 @@ namespace PMP
         FilteredCollectionTableModel* _collectionDisplayModel;
         QMenu* _collectionContextMenu;
         bool _usingColorsForDarkMode { false };
-    };
-
-    class FilterPickerWidget : public QWidget
-    {
-        Q_OBJECT
-    public:
-        FilterPickerWidget(PredefinedTrackCriterium criteriumForEmpty, QString captionForEmpty);
-
-        void clearCriterium();
-        const TrackCriterium& criterium() const { return *_criterium; }
-
-    Q_SIGNALS:
-        void criteriumChanged();
-
-    private:
-        void fillTrackCriteriaComboBox(QComboBox* comboBox,
-                                       PredefinedTrackCriterium criteriumForEmpty,
-                                       QString captionForEmpty);
-
-        QComboBox* _comboBox;
-        PredefinedTrackCriterium _predefinedCriterium;
-        std::unique_ptr<TrackCriterium> _criterium;
-    };
-
-    class FilterLineWidget : public QWidget
-    {
-        Q_OBJECT
-    public:
-        FilterLineWidget();
-
-        const TrackCriterium& criterium() const { return *_criterium; }
-
-    Q_SIGNALS:
-        void criteriumChanged();
-        void deleteClicked();
-
-    private:
-        FilterPickerWidget* _filterPicker;
-        QPushButton* _deleteButton;
-        QPushButton* _resetButton;
-        std::unique_ptr<TrackCriterium> _criterium;
-    };
-
-    class FiltersListWidget : public QWidget
-    {
-        Q_OBJECT
-    public:
-        FiltersListWidget();
-
-        const TrackCriterium& criterium() const { return *_criterium; }
-
-    Q_SIGNALS:
-        void criteriumChanged();
-
-    private:
-        void addFilterLine();
-        void rebuildCriterium();
-
-        QPushButton* _addButton;
-        QVBoxLayout* _verticalLayout;
-        QList<FilterLineWidget*> _filters;
-        std::unique_ptr<TrackCriterium> _criterium;
     };
 }
 #endif
