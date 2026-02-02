@@ -26,6 +26,7 @@
 
 QT_FORWARD_DECLARE_CLASS(QComboBox)
 QT_FORWARD_DECLARE_CLASS(QPushButton)
+QT_FORWARD_DECLARE_CLASS(QSpinBox)
 QT_FORWARD_DECLARE_CLASS(QVBoxLayout)
 
 namespace PMP
@@ -38,7 +39,7 @@ namespace PMP
                            QString captionForEmpty);
 
         void clearCriterium();
-        const TrackCriterium& criterium() const { return *_criterium; }
+        std::unique_ptr<TrackCriterium> createCriterium() const;
 
     Q_SIGNALS:
         void criteriumChanged();
@@ -50,7 +51,90 @@ namespace PMP
 
         QComboBox* _comboBox;
         PredefinedTrackCriterium _predefinedCriterium;
-        std::unique_ptr<TrackCriterium> _criterium;
+    };
+
+    class FilterEditorWidget : public QWidget
+    {
+        Q_OBJECT
+    public:
+        virtual ~FilterEditorWidget() = default;
+
+        virtual std::unique_ptr<TrackCriterium> createCriterium() const = 0;
+
+    Q_SIGNALS:
+        void criteriumChanged();
+
+    protected:
+        explicit FilterEditorWidget(QWidget* parent = nullptr) : QWidget(parent) {}
+    };
+
+    class ScoreComparisonEditorWidget : public FilterEditorWidget
+    {
+        Q_OBJECT
+    public:
+        explicit ScoreComparisonEditorWidget(QWidget* parent);
+        void setOperator(ComparisonOperator comparisonOperator);
+        void setScore(int score);
+
+        std::unique_ptr<TrackCriterium> createCriterium() const override;
+
+    private:
+        QComboBox* _operatorComboBox;
+        QSpinBox* _scoreSpinBox;
+    };
+
+    class FilterEditorFactory
+    {
+    public:
+        static bool isEditable(TrackCriterium const& criterium);
+        static FilterEditorWidget* createEditor(QWidget* parent,
+                                                TrackCriterium const& criterium);
+
+    private:
+        class IsEditableVisitor final : public TrackCriteriumVisitor
+        {
+        public:
+            bool isCriteriumEditable() const { return _isEditable; }
+
+            void visit(const ConstantTrackCriterium&) override;
+            void visit(const TrackLengthPresenceCriterium&) override;
+            void visit(const TrackLengthComparisonCriterium&) override;
+            void visit(const TrackScorePresenceCriterium&) override;
+            void visit(const TrackScoreComparisonCriterium&) override;
+            void visit(const TrackLastHeardPresenceCriterium&) override;
+            void visit(const TrackLastHeardRecentlyCriterium&) override;
+            void visit(const TrackQueuePresenceCriterium&) override;
+            void visit(const TrackAvailabilityCriterium&) override;
+            void visit(const TrackMetaDataPresenceCriterium&) override;
+            void visit(const CompositeTrackCriterium&) override;
+
+        private:
+            bool _isEditable { false };
+        };
+
+        class EditorWidgetCreationVisitor final : public TrackCriteriumVisitor
+        {
+        public:
+            explicit EditorWidgetCreationVisitor(QWidget* parent);
+
+            FilterEditorWidget* editorWidget() { return _editorWidget; }
+
+            void visit(const ConstantTrackCriterium&) override;
+            void visit(const TrackLengthPresenceCriterium&) override;
+            void visit(const TrackLengthComparisonCriterium&) override;
+            void visit(const TrackScorePresenceCriterium&) override;
+            void visit(const TrackScoreComparisonCriterium&) override;
+            void visit(const TrackLastHeardPresenceCriterium&) override;
+            void visit(const TrackLastHeardRecentlyCriterium&) override;
+            void visit(const TrackQueuePresenceCriterium&) override;
+            void visit(const TrackAvailabilityCriterium&) override;
+            void visit(const TrackMetaDataPresenceCriterium&) override;
+            void visit(const CompositeTrackCriterium&) override;
+
+        private:
+            QWidget* _parent;
+            FilterEditorWidget* _editorWidget;
+        };
     };
 
     class FilterLineWidget : public QWidget
@@ -59,17 +143,23 @@ namespace PMP
     public:
         FilterLineWidget();
 
-        const TrackCriterium& criterium() const { return *_criterium; }
+        std::unique_ptr<TrackCriterium> createCriterium() const;
 
     Q_SIGNALS:
         void criteriumChanged();
         void deleteClicked();
 
+    private Q_SLOTS:
+        void onPickerCriteriumChanged();
+        void onEditClicked();
+        void onResetClicked();
+
     private:
         FilterPickerWidget* _filterPicker;
+        FilterEditorWidget* _editorWidget;
+        QPushButton* _editButton;
         QPushButton* _deleteButton;
         QPushButton* _resetButton;
-        std::unique_ptr<TrackCriterium> _criterium;
     };
 
     class FiltersListWidget : public QWidget
@@ -78,19 +168,17 @@ namespace PMP
     public:
         FiltersListWidget();
 
-        const TrackCriterium& criterium() const { return *_criterium; }
+        std::unique_ptr<TrackCriterium> createCriterium() const;
 
     Q_SIGNALS:
         void criteriumChanged();
 
     private:
         void addFilterLine();
-        void rebuildCriterium();
 
         QPushButton* _addButton;
         QVBoxLayout* _verticalLayout;
         QList<FilterLineWidget*> _filters;
-        std::unique_ptr<TrackCriterium> _criterium;
     };
 }
 #endif

@@ -662,5 +662,6 @@ namespace PMP
 }
 
 Q_DECLARE_METATYPE(PMP::PredefinedTrackCriterium)
+Q_DECLARE_METATYPE(PMP::ComparisonOperator)
 
 #endif

@@ -149,21 +149,20 @@ namespace PMP
 
     void CollectionWidget::onFiltersChanged()
     {
-        _collectionDisplayModel->setTrackFilters(_filtersListWidget->criterium());
+        auto criterium = _filtersListWidget->createCriterium();
+        _collectionDisplayModel->setTrackFilters(*criterium);
     }
 
     void CollectionWidget::onHighlightCriteriumChanged()
     {
+        auto criterium = _highlightingCriteriumPicker->createCriterium();
+
         bool nothingToHighlight =
-            _highlightingCriteriumPicker->criterium().equals(
-                *ConstantTrackCriterium::noTracksMatch()
-            );
+            criterium->equals(*ConstantTrackCriterium::noTracksMatch());
 
         _colorSwitcher->setVisible(!nothingToHighlight);
 
-        _collectionSourceModel->setHighlightCriterium(
-            _highlightingCriteriumPicker->criterium()
-        );
+        _collectionSourceModel->setHighlightCriterium(*criterium);
     }
 
     void CollectionWidget::highlightColorIndexChanged()

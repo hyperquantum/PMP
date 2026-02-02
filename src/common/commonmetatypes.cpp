@@ -45,6 +45,7 @@ namespace PMP
         CommonMetatypesInit()
         {
             qRegisterMetaType<PMP::AudioData>();
+            qRegisterMetaType<PMP::ComparisonOperator>();
             qRegisterMetaType<PMP::FileHash>();
             qRegisterMetaType<PMP::PlayerHistoryTrackInfo>();
             qRegisterMetaType<PMP::PlayerMode>();

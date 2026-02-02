@@ -19,19 +19,21 @@
 
 #include "trackfilterwidgets.h"
 
+#include "common/nullable.h"
 #include "common/unicodechars.h"
 
 #include <QComboBox>
 #include <QHBoxLayout>
+#include <QLabel>
 #include <QPushButton>
+#include <QSpinBox>
 #include <QVBoxLayout>
 
 namespace PMP
 {
     FilterPickerWidget::FilterPickerWidget(PredefinedTrackCriterium criteriumForEmpty,
                                            QString captionForEmpty)
-     : _predefinedCriterium(criteriumForEmpty),
-        _criterium(convertToTrackCriterium(criteriumForEmpty))
+     : _predefinedCriterium(criteriumForEmpty)
     {
         _comboBox = new QComboBox();
 
@@ -53,7 +55,6 @@ namespace PMP
                     return;
 
                 _predefinedCriterium = predefinedCriterium;
-                _criterium = convertToTrackCriterium(predefinedCriterium);
                 Q_EMIT criteriumChanged();
             }
             );
@@ -64,6 +65,11 @@ namespace PMP
         _comboBox->setCurrentIndex(0);
     }
 
+    std::unique_ptr<TrackCriterium> FilterPickerWidget::createCriterium() const
+    {
+        return convertToTrackCriterium(_predefinedCriterium);
+    }
+
     void FilterPickerWidget::fillTrackCriteriaComboBox(QComboBox* comboBox,
                                             PredefinedTrackCriterium criteriumForEmpty,
                                                        QString captionForEmpty)
@@ -72,7 +78,7 @@ namespace PMP
             [comboBox](QString text, PredefinedTrackCriterium mode)
             {
                 text.replace(">=", UnicodeChars::greaterThanOrEqual)
-                .replace("<=", UnicodeChars::lessThanOrEqual);
+                    .replace("<=", UnicodeChars::lessThanOrEqual);
 
                 comboBox->addItem(text, QVariant::fromValue(mode));
             };
@@ -132,19 +138,294 @@ namespace PMP
 
     // =============================================================== //
 
+    namespace
+    {
+        void fillComboBoxWithComparisonOperators(QComboBox* comboBox)
+        {
+            comboBox->addItem("=", QVariant::fromValue(ComparisonOperator::Equal));
+
+            comboBox->addItem(UnicodeChars::notEqual,
+                              QVariant::fromValue(ComparisonOperator::NotEqual));
+
+            comboBox->addItem("<", QVariant::fromValue(ComparisonOperator::LessThan));
+
+            comboBox->addItem(UnicodeChars::lessThanOrEqual,
+                              QVariant::fromValue(ComparisonOperator::LessThanOrEqual));
+
+            comboBox->addItem(">", QVariant::fromValue(ComparisonOperator::GreaterThan));
+
+            comboBox->addItem(UnicodeChars::greaterThanOrEqual,
+                             QVariant::fromValue(ComparisonOperator::GreaterThanOrEqual));
+        }
+
+        void selectValue(QComboBox* comboBox, ComparisonOperator op)
+        {
+            int index = -1;
+            switch (op)
+            {
+            case ComparisonOperator::Equal:
+                index = 0;
+                break;
+            case ComparisonOperator::NotEqual:
+                index = 1;
+                break;
+            case ComparisonOperator::LessThan:
+                index = 2;
+                break;
+            case ComparisonOperator::LessThanOrEqual:
+                index = 3;
+                break;
+            case ComparisonOperator::GreaterThan:
+                index = 4;
+                break;
+            case ComparisonOperator::GreaterThanOrEqual:
+                index = 5;
+                break;
+            }
+
+            comboBox->setCurrentIndex(index);
+        }
+
+        Nullable<ComparisonOperator> getSelectedComparisonOperator(QComboBox* comboBox)
+        {
+            if (comboBox->currentIndex() < 0)
+                return null;
+
+            auto comparisonOperator =
+                comboBox->currentData().value<ComparisonOperator>();
+
+            return comparisonOperator;
+        }
+    }
+
+    // =============================================================== //
+
+    ScoreComparisonEditorWidget::ScoreComparisonEditorWidget(QWidget* parent)
+     : FilterEditorWidget(parent)
+    {
+        auto* scoreLabel = new QLabel(tr("score"));
+        _operatorComboBox = new QComboBox();
+        _scoreSpinBox = new QSpinBox();
+
+        QHBoxLayout* layout = new QHBoxLayout(this);
+        layout->setContentsMargins(0, 0, 0, 0);
+        layout->addWidget(scoreLabel);
+        layout->addWidget(_operatorComboBox);
+        layout->addWidget(_scoreSpinBox);
+        layout->addStretch();
+
+        fillComboBoxWithComparisonOperators(_operatorComboBox);
+
+        connect(
+            _operatorComboBox, &QComboBox::currentIndexChanged,
+            this, &ScoreComparisonEditorWidget::criteriumChanged
+        );
+
+        connect(
+            _scoreSpinBox, &QSpinBox::valueChanged,
+            this, &ScoreComparisonEditorWidget::criteriumChanged
+        );
+    }
+
+    void ScoreComparisonEditorWidget::setOperator(ComparisonOperator comparisonOperator)
+    {
+        selectValue(_operatorComboBox, comparisonOperator);
+    }
+
+    void ScoreComparisonEditorWidget::setScore(int score)
+    {
+        _scoreSpinBox->setValue(score);
+    }
+
+    std::unique_ptr<TrackCriterium> ScoreComparisonEditorWidget::createCriterium() const
+    {
+        auto comparisonOperator = getSelectedComparisonOperator(_operatorComboBox);
+
+        if (comparisonOperator == null)
+            return ConstantTrackCriterium::noTracksMatch();
+
+        auto score = _scoreSpinBox->value();
+
+        return std::make_unique<TrackScoreComparisonCriterium>(comparisonOperator.value(),
+                                                               score);
+    }
+
+    // =============================================================== //
+
+    bool FilterEditorFactory::isEditable(const TrackCriterium& criterium)
+    {
+        IsEditableVisitor visitor;
+        criterium.accept(visitor);
+        return visitor.isCriteriumEditable();
+    }
+
+    FilterEditorWidget* FilterEditorFactory::createEditor(QWidget* parent,
+                                                          const TrackCriterium& criterium)
+    {
+        EditorWidgetCreationVisitor visitor(parent);
+        criterium.accept(visitor);
+        return visitor.editorWidget();
+    }
+
+    void FilterEditorFactory::IsEditableVisitor::visit(const ConstantTrackCriterium&)
+    {
+        _isEditable = false;
+    }
+
+    void FilterEditorFactory::IsEditableVisitor::visit(
+        const TrackLengthPresenceCriterium&)
+    {
+        _isEditable = false;
+    }
+
+    void FilterEditorFactory::IsEditableVisitor::visit(
+        const TrackLengthComparisonCriterium&)
+    {
+        _isEditable = false;
+    }
+
+    void FilterEditorFactory::IsEditableVisitor::visit(const TrackScorePresenceCriterium&)
+    {
+        _isEditable = false;
+    }
+
+    void FilterEditorFactory::IsEditableVisitor::visit(
+        const TrackScoreComparisonCriterium&)
+    {
+        _isEditable = true;
+    }
+
+    void FilterEditorFactory::IsEditableVisitor::visit(
+        const TrackLastHeardPresenceCriterium&)
+    {
+        _isEditable = false;
+    }
+
+    void FilterEditorFactory::IsEditableVisitor::visit(
+        const TrackLastHeardRecentlyCriterium&)
+    {
+        _isEditable = false;
+    }
+
+    void FilterEditorFactory::IsEditableVisitor::visit(const TrackQueuePresenceCriterium&)
+    {
+        _isEditable = false;
+    }
+
+    void FilterEditorFactory::IsEditableVisitor::visit(const TrackAvailabilityCriterium&)
+    {
+        _isEditable = false;
+    }
+
+    void FilterEditorFactory::IsEditableVisitor::visit(
+        const TrackMetaDataPresenceCriterium&)
+    {
+        _isEditable = false;
+    }
+
+    void FilterEditorFactory::IsEditableVisitor::visit(const CompositeTrackCriterium&)
+    {
+        _isEditable = false;
+    }
+
+    FilterEditorFactory::EditorWidgetCreationVisitor::EditorWidgetCreationVisitor(
+        QWidget* parent)
+     : _parent(parent),
+       _editorWidget(nullptr)
+    {
+        //
+    }
+
+    void FilterEditorFactory::EditorWidgetCreationVisitor::visit(
+        const ConstantTrackCriterium&)
+    {
+        _editorWidget = nullptr;
+    }
+
+    void FilterEditorFactory::EditorWidgetCreationVisitor::visit(
+        const TrackLengthPresenceCriterium&)
+    {
+        _editorWidget = nullptr;
+    }
+
+    void FilterEditorFactory::EditorWidgetCreationVisitor::visit(
+        const TrackLengthComparisonCriterium&)
+    {
+        _editorWidget = nullptr;
+    }
+
+    void FilterEditorFactory::EditorWidgetCreationVisitor::visit(
+        const TrackScorePresenceCriterium&)
+    {
+        _editorWidget = nullptr;
+    }
+
+    void FilterEditorFactory::EditorWidgetCreationVisitor::visit(
+        const TrackScoreComparisonCriterium& scoreComparisonCriterium)
+    {
+        auto* editor = new ScoreComparisonEditorWidget(_parent);
+        editor->setOperator(scoreComparisonCriterium.comparisonOperator());
+        editor->setScore(scoreComparisonCriterium.score());
+
+        _editorWidget = editor;
+    }
+
+    void FilterEditorFactory::EditorWidgetCreationVisitor::visit(
+        const TrackLastHeardPresenceCriterium&)
+    {
+        _editorWidget = nullptr;
+    }
+
+    void FilterEditorFactory::EditorWidgetCreationVisitor::visit(
+        const TrackLastHeardRecentlyCriterium&)
+    {
+        _editorWidget = nullptr;
+    }
+
+    void FilterEditorFactory::EditorWidgetCreationVisitor::visit(
+        const TrackQueuePresenceCriterium&)
+    {
+        _editorWidget = nullptr;
+    }
+
+    void FilterEditorFactory::EditorWidgetCreationVisitor::visit(
+        const TrackAvailabilityCriterium&)
+    {
+        _editorWidget = nullptr;
+    }
+
+    void FilterEditorFactory::EditorWidgetCreationVisitor::visit(
+        const TrackMetaDataPresenceCriterium&)
+    {
+        _editorWidget = nullptr;
+    }
+
+    void FilterEditorFactory::EditorWidgetCreationVisitor::visit(
+        const CompositeTrackCriterium&)
+    {
+        _editorWidget = nullptr;
+    }
+
+    // =============================================================== //
+
     FilterLineWidget::FilterLineWidget()
+     : _editorWidget(nullptr)
     {
         _filterPicker = new FilterPickerWidget(PredefinedTrackCriterium::AllTracks,
                                                tr("(empty)"));
-        _criterium = _filterPicker->criterium().clone();
+        _editButton = new QPushButton();
         _deleteButton = new QPushButton();
         _resetButton = new QPushButton();
 
         QHBoxLayout* layout = new QHBoxLayout(this);
         layout->setContentsMargins(0, 0, 0, 0);
         layout->addWidget(_filterPicker, 1);
+        layout->addWidget(_editButton, 0);
         layout->addWidget(_deleteButton, 0);
         layout->addWidget(_resetButton, 0);
+
+        _editButton->setText(tr("Edit"));
+        _editButton->setEnabled(false);
 
         _deleteButton->setIcon(style()->standardIcon(QStyle::SP_DialogDiscardButton));
         _deleteButton->setToolTip(tr("Remove filter"));
@@ -154,11 +435,12 @@ namespace PMP
 
         connect(
             _filterPicker, &FilterPickerWidget::criteriumChanged,
-            [this]()
-            {
-                _criterium = _filterPicker->criterium().clone();
-                Q_EMIT criteriumChanged();
-            }
+            this, &FilterLineWidget::onPickerCriteriumChanged
+        );
+
+        connect(
+            _editButton, &QPushButton::clicked,
+            this, &FilterLineWidget::onEditClicked
         );
 
         connect(
@@ -168,14 +450,67 @@ namespace PMP
 
         connect(
             _resetButton, &QPushButton::clicked,
-            this, [this]() { _filterPicker->clearCriterium(); }
+            this, &FilterLineWidget::onResetClicked
         );
+    }
+
+    std::unique_ptr<TrackCriterium> FilterLineWidget::createCriterium() const
+    {
+        if (_editorWidget)
+            return _editorWidget->createCriterium();
+
+        return _filterPicker->createCriterium();
+    }
+
+    void FilterLineWidget::onPickerCriteriumChanged()
+    {
+        if (_editorWidget)
+            return;
+
+        auto criterium = _filterPicker->createCriterium();
+        bool isEditable = FilterEditorFactory::isEditable(*criterium);
+        _editButton->setEnabled(isEditable);
+
+        Q_EMIT criteriumChanged();
+    }
+
+    void FilterLineWidget::onEditClicked()
+    {
+        Q_ASSERT_X(_editorWidget == nullptr,
+                   "FilterLineWidget::onEditClicked",
+                   "editor already present!");
+
+        auto criterium = _filterPicker->createCriterium();
+
+        _editorWidget = FilterEditorFactory::createEditor(nullptr, *criterium);
+
+        connect(
+            _editorWidget, &FilterEditorWidget::criteriumChanged,
+            this, &FilterLineWidget::criteriumChanged
+        );
+
+        layout()->replaceWidget(_filterPicker, _editorWidget);
+        _filterPicker->setVisible(false);
+
+        _editButton->setEnabled(false);
+    }
+
+    void FilterLineWidget::onResetClicked()
+    {
+        if (_editorWidget)
+        {
+            layout()->replaceWidget(_editorWidget, _filterPicker);
+            _editorWidget->deleteLater();
+            _editorWidget = nullptr;
+            _filterPicker->setVisible(true);
+        }
+
+        _filterPicker->clearCriterium();
     }
 
     // =============================================================== //
 
     FiltersListWidget::FiltersListWidget()
-     : _criterium(ConstantTrackCriterium::allTracksMatch())
     {
         _verticalLayout = new QVBoxLayout(this);
         _verticalLayout->setContentsMargins(0, 0, 0, 0);
@@ -204,6 +539,18 @@ namespace PMP
         );
     }
 
+    std::unique_ptr<TrackCriterium> FiltersListWidget::createCriterium() const
+    {
+        auto compositeCriterium = std::make_unique<CompositeTrackCriterium>();
+
+        for (auto const* filterLine : _filters)
+        {
+            compositeCriterium->add(filterLine->createCriterium());
+        }
+
+        return compositeCriterium;
+    }
+
     void FiltersListWidget::addFilterLine()
     {
         auto* filter = new FilterLineWidget();
@@ -212,14 +559,12 @@ namespace PMP
         _verticalLayout->insertWidget(index, filter);
 
         _filters.append(filter);
-        rebuildCriterium();
 
         connect(
             filter, &FilterLineWidget::criteriumChanged,
             this,
             [this]()
             {
-                rebuildCriterium();
                 Q_EMIT criteriumChanged();
             }
         );
@@ -239,21 +584,8 @@ namespace PMP
                 _filters.removeAt(index);
                 filter->deleteLater();
 
-                rebuildCriterium();
                 Q_EMIT criteriumChanged();
             }
         );
-    }
-
-    void FiltersListWidget::rebuildCriterium()
-    {
-        auto compositeCriterium = std::make_unique<CompositeTrackCriterium>();
-
-        for (auto const* filterLine : _filters)
-        {
-            compositeCriterium->add(filterLine->criterium().clone());
-        }
-
-        _criterium = std::move(compositeCriterium);
     }
 }
