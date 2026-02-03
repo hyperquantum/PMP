@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2025-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -79,7 +79,10 @@ namespace PMP
         }
 
         auto op = criterium.comparisonOperator();
-        auto criteriumMs = criterium.lengthMinutes() * 60 * 1000;
+        auto criteriumMs =
+            criterium.hours() * 60 * 60 * 1000
+            + criterium.minutes() * 60 * 1000
+            + criterium.seconds() * 1000;
 
         _result = evaluateComparison(trackLengthMs.value(), op, criteriumMs);
     }

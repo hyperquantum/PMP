@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -78,6 +78,8 @@ namespace PMP
     {
     public:
         static unsigned getRandomSeed();
+
+        static void normalizeDuration(int& hours, int& minutes, int& seconds);
 
         static QString secondsToHoursMinuteSecondsText(qint32 totalSeconds);
         static QString millisecondsToShortDisplayTimeText(qint64 milliseconds);

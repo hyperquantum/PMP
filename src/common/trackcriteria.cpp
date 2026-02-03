@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2023-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -29,14 +29,14 @@ namespace PMP
             int lengthMinutesCeiling)
         {
             return std::make_unique<TrackLengthComparisonCriterium>(
-                ComparisonOperator::LessThan, lengthMinutesCeiling);
+                ComparisonOperator::LessThan, 0, lengthMinutesCeiling, 0);
         }
 
         std::unique_ptr<TrackCriterium> createLengthAtLeastCriterium(
             int minimumLengthMinutes)
         {
             return std::make_unique<TrackLengthComparisonCriterium>(
-                ComparisonOperator::GreaterThanOrEqual, minimumLengthMinutes);
+                ComparisonOperator::GreaterThanOrEqual, 0, minimumLengthMinutes, 0);
         }
 
         std::unique_ptr<TrackCriterium> createScoreLessThanCriterium(short scoreCeiling)
@@ -201,15 +201,15 @@ namespace PMP
 
     TrackLengthComparisonCriterium::TrackLengthComparisonCriterium()
      : _operator(ComparisonOperator::GreaterThanOrEqual),
-        _minutes(0)
+        _hours(0), _minutes(0), _seconds(0)
     {
         //
     }
 
     TrackLengthComparisonCriterium::TrackLengthComparisonCriterium(
-        ComparisonOperator comparisonOperator, int minutes)
+        ComparisonOperator comparisonOperator, int hours, int minutes, int seconds)
      : _operator(comparisonOperator),
-        _minutes(minutes)
+        _hours(hours), _minutes(minutes), _seconds(seconds)
     {
         //
     }

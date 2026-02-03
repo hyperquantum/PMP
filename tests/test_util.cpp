@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -225,6 +225,56 @@ void TestUtil::getRandomSeed()
     QVERIFY(seed2 != seed3);
     QVERIFY(seed2 != seed4);
     QVERIFY(seed3 != seed4);
+}
+
+void TestUtil::normalizeDuration()
+{
+    int hours, minutes, seconds;
+
+    {
+        hours = 0; minutes = 0; seconds = 0;
+        Util::normalizeDuration(hours, minutes, seconds);
+
+        QCOMPARE(hours, 0);
+        QCOMPARE(minutes, 0);
+        QCOMPARE(seconds, 0);
+    }
+
+    {
+        hours = 1; minutes = 30; seconds = 8;
+        Util::normalizeDuration(hours, minutes, seconds);
+
+        QCOMPARE(hours, 1);
+        QCOMPARE(minutes, 30);
+        QCOMPARE(seconds, 8);
+    }
+
+    {
+        hours = 1; minutes = 30; seconds = 60;
+        Util::normalizeDuration(hours, minutes, seconds);
+
+        QCOMPARE(hours, 1);
+        QCOMPARE(minutes, 31);
+        QCOMPARE(seconds, 0);
+    }
+
+    {
+        hours = 1; minutes = 70; seconds = 5;
+        Util::normalizeDuration(hours, minutes, seconds);
+
+        QCOMPARE(hours, 2);
+        QCOMPARE(minutes, 10);
+        QCOMPARE(seconds, 5);
+    }
+
+    {
+        hours = 1; minutes = 59; seconds = 137;
+        Util::normalizeDuration(hours, minutes, seconds);
+
+        QCOMPARE(hours, 2);
+        QCOMPARE(minutes, 1);
+        QCOMPARE(seconds, 17);
+    }
 }
 
 void TestUtil::generateZeroedMemory()

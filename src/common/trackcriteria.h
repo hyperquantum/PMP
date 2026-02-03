@@ -238,10 +238,18 @@ namespace PMP
     public:
         TrackLengthComparisonCriterium();
         TrackLengthComparisonCriterium(ComparisonOperator comparisonOperator,
-                                       int minutes);
+                                       int hours, int minutes, int seconds);
 
-        void setLengthMinutes(int minutes) { _minutes = minutes; }
-        int lengthMinutes() const { return _minutes; }
+        void setLength(int hours, int minutes, int seconds)
+        {
+            _hours = hours;
+            _minutes = minutes;
+            _seconds = seconds;
+        }
+
+        int hours() const { return _hours; }
+        int minutes() const { return _minutes; }
+        int seconds() const { return _seconds; }
 
         void setComparisonOperator(ComparisonOperator comparisonOperator)
         {
@@ -267,12 +275,17 @@ namespace PMP
         {
             auto* o = dynamic_cast<const TrackLengthComparisonCriterium*>(&other);
 
-            return o && _operator == o->_operator && _minutes == o->_minutes;
+            return o && _operator == o->_operator
+                   && _hours == o->hours()
+                   && _minutes == o->minutes()
+                   && _seconds == o->seconds();
         }
 
     private:
         ComparisonOperator _operator;
+        int _hours;
         int _minutes;
+        int _seconds;
     };
 
     class TrackScorePresenceCriterium final : public TrackCriterium

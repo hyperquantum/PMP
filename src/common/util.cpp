@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -50,6 +50,21 @@ namespace PMP
         QThread::msleep(8);
 
         return result;
+    }
+
+    void Util::normalizeDuration(int& hours, int& minutes, int& seconds)
+    {
+        int extraMinutes = seconds / 60;
+        int normalizedSeconds = seconds % 60;
+
+        seconds = normalizedSeconds;
+        minutes += extraMinutes;
+
+        int extraHours = minutes / 60;
+        int normalizedMinutes = minutes % 60;
+
+        minutes = normalizedMinutes;
+        hours += extraHours;
     }
 
     QString Util::secondsToHoursMinuteSecondsText(qint32 totalSeconds)

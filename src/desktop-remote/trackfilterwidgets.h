@@ -83,6 +83,24 @@ namespace PMP
         QSpinBox* _scoreSpinBox;
     };
 
+    class LengthComparisonEditorWidget : public FilterEditorWidget
+    {
+        Q_OBJECT
+    public:
+        explicit LengthComparisonEditorWidget(QWidget* parent);
+        void setOperator(ComparisonOperator comparisonOperator);
+        void setLength(int hours, int minutes, int seconds);
+
+        std::unique_ptr<TrackCriterium> createCriterium() const override;
+
+    private:
+        QComboBox* _operatorComboBox;
+        QSpinBox* _hoursSpinBox;
+        QSpinBox* _minutesSpinBox;
+        QSpinBox* _secondsSpinBox;
+        quint8 _suspendChangeSignal { 0 };
+    };
+
     class FilterEditorFactory
     {
     public:

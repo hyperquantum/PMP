@@ -21,6 +21,7 @@
 
 #include "common/nullable.h"
 #include "common/unicodechars.h"
+#include "common/util.h"
 
 #include <QComboBox>
 #include <QHBoxLayout>
@@ -252,6 +253,102 @@ namespace PMP
 
     // =============================================================== //
 
+    LengthComparisonEditorWidget::LengthComparisonEditorWidget(QWidget* parent)
+     : FilterEditorWidget(parent)
+    {
+        auto* lengthLabel = new QLabel(tr("length"));
+        _operatorComboBox = new QComboBox();
+        _hoursSpinBox = new QSpinBox();
+        auto* hoursLabel = new QLabel(tr("h"));
+        _minutesSpinBox = new QSpinBox();
+        auto* minutesLabel = new QLabel(tr("min."));
+        _secondsSpinBox = new QSpinBox();
+        auto* secondsLabel = new QLabel(tr("s"));
+
+        QHBoxLayout* layout = new QHBoxLayout(this);
+        layout->setContentsMargins(0, 0, 0, 0);
+        layout->addWidget(lengthLabel);
+        layout->addWidget(_operatorComboBox);
+        layout->addWidget(_hoursSpinBox);
+        layout->addWidget(hoursLabel);
+        layout->addWidget(_minutesSpinBox);
+        layout->addWidget(minutesLabel);
+        layout->addWidget(_secondsSpinBox);
+        layout->addWidget(secondsLabel);
+        layout->addStretch();
+
+        fillComboBoxWithComparisonOperators(_operatorComboBox);
+
+        connect(
+            _operatorComboBox, &QComboBox::currentIndexChanged,
+            this, &ScoreComparisonEditorWidget::criteriumChanged
+            );
+
+        connect(
+            _hoursSpinBox, &QSpinBox::valueChanged,
+            this, [this]() { if (!_suspendChangeSignal) Q_EMIT criteriumChanged(); }
+        );
+
+        connect(
+            _minutesSpinBox, &QSpinBox::valueChanged,
+            this, [this]() { if (!_suspendChangeSignal) Q_EMIT criteriumChanged(); }
+        );
+
+        connect(
+            _secondsSpinBox, &QSpinBox::valueChanged,
+            this, [this]() { if (!_suspendChangeSignal) Q_EMIT criteriumChanged(); }
+        );
+    }
+
+    void LengthComparisonEditorWidget::setOperator(ComparisonOperator comparisonOperator)
+    {
+        selectValue(_operatorComboBox, comparisonOperator);
+    }
+
+    void LengthComparisonEditorWidget::setLength(int hours, int minutes, int seconds)
+    {
+        Util::normalizeDuration(hours, minutes, seconds);
+
+        Q_ASSERT_X(hours >= 0 && hours < 100,
+                   "LengthComparisonEditorWidget::setLength",
+                   "hours out of range");
+
+        Q_ASSERT_X(minutes >= 0 && minutes < 100,
+                   "LengthComparisonEditorWidget::setLength",
+                   "minutes out of range");
+
+        Q_ASSERT_X(seconds >= 0 && seconds < 100,
+                   "LengthComparisonEditorWidget::setLength",
+                   "seconds out of range");
+
+        _suspendChangeSignal++;
+
+        _hoursSpinBox->setValue(hours);
+        _minutesSpinBox->setValue(minutes);
+        _secondsSpinBox->setValue(seconds);
+
+        _suspendChangeSignal--;
+
+        Q_EMIT criteriumChanged();
+    }
+
+    std::unique_ptr<TrackCriterium> LengthComparisonEditorWidget::createCriterium() const
+    {
+        auto comparisonOperator = getSelectedComparisonOperator(_operatorComboBox);
+
+        if (comparisonOperator == null)
+            return ConstantTrackCriterium::noTracksMatch();
+
+        int hours = _hoursSpinBox->value();
+        int minutes = _minutesSpinBox->value();
+        int seconds = _secondsSpinBox->value();
+
+        return std::make_unique<TrackLengthComparisonCriterium>(
+            comparisonOperator.value(), hours, minutes, seconds);
+    }
+
+    // =============================================================== //
+
     bool FilterEditorFactory::isEditable(const TrackCriterium& criterium)
     {
         IsEditableVisitor visitor;
@@ -281,7 +378,7 @@ namespace PMP
     void FilterEditorFactory::IsEditableVisitor::visit(
         const TrackLengthComparisonCriterium&)
     {
-        _isEditable = false;
+        _isEditable = true;
     }
 
     void FilterEditorFactory::IsEditableVisitor::visit(const TrackScorePresenceCriterium&)
@@ -349,9 +446,15 @@ namespace PMP
     }
 
     void FilterEditorFactory::EditorWidgetCreationVisitor::visit(
-        const TrackLengthComparisonCriterium&)
+        const TrackLengthComparisonCriterium& lengthCriterium)
     {
-        _editorWidget = nullptr;
+        auto* editor = new LengthComparisonEditorWidget(_parent);
+        editor->setOperator(lengthCriterium.comparisonOperator());
+        editor->setLength(lengthCriterium.hours(),
+                          lengthCriterium.minutes(),
+                          lengthCriterium.seconds());
+
+        _editorWidget = editor;
     }
 
     void FilterEditorFactory::EditorWidgetCreationVisitor::visit(
@@ -483,6 +586,10 @@ namespace PMP
         auto criterium = _filterPicker->createCriterium();
 
         _editorWidget = FilterEditorFactory::createEditor(nullptr, *criterium);
+
+        Q_ASSERT_X(_editorWidget != nullptr,
+                   "FilterLineWidget::onEditClicked",
+                   "failed to obtain editor for criterium");
 
         connect(
             _editorWidget, &FilterEditorWidget::criteriumChanged,
