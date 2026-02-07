@@ -486,6 +486,90 @@ namespace PMP
 
     // =============================================================== //
 
+    LastHeardEditorWidget::LastHeardEditorWidget(QWidget* parent)
+     : FilterEditorWidget(parent)
+    {
+        _inversionComboBox = new QComboBox();
+        _yearsSpinBox = new QSpinBox();
+        auto* yearsLabel = new QLabel(tr("years"));
+        _daysSpinBox = new QSpinBox();
+        auto* daysLabel = new QLabel(tr("days"));
+
+        QHBoxLayout* layout = new QHBoxLayout(this);
+        layout->setContentsMargins(0, 0, 0, 0);
+        layout->addWidget(_inversionComboBox);
+        layout->addWidget(_yearsSpinBox);
+        layout->addWidget(yearsLabel);
+        layout->addWidget(_daysSpinBox);
+        layout->addWidget(daysLabel);
+        layout->addStretch();
+
+        _inversionComboBox->addItem(tr("heard within"));
+        _inversionComboBox->addItem(tr("not heard within"));
+
+        _daysSpinBox->setMaximum(999);
+
+        connect(
+            _inversionComboBox, &QComboBox::currentIndexChanged,
+            this, &ScoreComparisonEditorWidget::criteriumChanged
+        );
+
+        connect(
+            _yearsSpinBox, &QSpinBox::valueChanged,
+            this, [this]() { if (!_suspendChangeSignal) Q_EMIT criteriumChanged(); }
+        );
+
+        connect(
+            _daysSpinBox, &QSpinBox::valueChanged,
+            this, [this]() { if (!_suspendChangeSignal) Q_EMIT criteriumChanged(); }
+        );
+    }
+
+    void LastHeardEditorWidget::setInverted(bool isInverted)
+    {
+        _inversionComboBox->setCurrentIndex(isInverted ? 1 : 0);
+    }
+
+    void LastHeardEditorWidget::setPeriod(int years, int days)
+    {
+        Util::normalizeLongDuration(years, days);
+
+        Q_ASSERT_X(years >= 0 && years < 100,
+                   "LastHeardEditorWidget::setPeriod",
+                   "years out of range");
+
+        Q_ASSERT_X(days >= 0 && days < 1000,
+                   "LastHeardEditorWidget::setPeriod",
+                   "days out of range");
+
+        _suspendChangeSignal++;
+
+        _yearsSpinBox->setValue(years);
+        _daysSpinBox->setValue(days);
+
+        _suspendChangeSignal--;
+
+        Q_EMIT criteriumChanged();
+    }
+
+    std::unique_ptr<TrackCriterium> LastHeardEditorWidget::createCriterium() const
+    {
+        auto inversionIndex = _inversionComboBox->currentIndex();
+
+        if (inversionIndex < 0)
+            return ConstantTrackCriterium::noTracksMatch();
+
+        bool isInverted = inversionIndex == 1;
+
+        int years = _yearsSpinBox->value();
+        int days = _daysSpinBox->value();
+
+        return std::make_unique<TrackLastHeardRecentlyCriterium>(
+            CompositeDuration { .years = years, .days = days }, isInverted);
+    }
+
+    // =============================================================== //
+
     LengthComparisonEditorWidget::LengthComparisonEditorWidget(QWidget* parent)
      : FilterEditorWidget(parent)
     {
@@ -634,7 +718,7 @@ namespace PMP
     void FilterEditorFactory::IsEditableVisitor::visit(
         const TrackLastHeardRecentlyCriterium&)
     {
-        _isEditable = false;
+        _isEditable = true;
     }
 
     void FilterEditorFactory::IsEditableVisitor::visit(const TrackQueuePresenceCriterium&)
@@ -713,9 +797,15 @@ namespace PMP
     }
 
     void FilterEditorFactory::EditorWidgetCreationVisitor::visit(
-        const TrackLastHeardRecentlyCriterium&)
+        const TrackLastHeardRecentlyCriterium& criterium)
     {
-        _editorWidget = nullptr;
+        auto period = criterium.duration();
+
+        auto* editor = new LastHeardEditorWidget(_parent);
+        editor->setPeriod(period.years, period.days);
+        editor->setInverted(criterium.isInverted());
+
+        _editorWidget = editor;
     }
 
     void FilterEditorFactory::EditorWidgetCreationVisitor::visit(

@@ -80,6 +80,7 @@ namespace PMP
         static unsigned getRandomSeed();
 
         static void normalizeDuration(int& hours, int& minutes, int& seconds);
+        static void normalizeLongDuration(int& years, int& days);
 
         static QString secondsToHoursMinuteSecondsText(qint32 totalSeconds);
         static QString millisecondsToShortDisplayTimeText(qint64 milliseconds);

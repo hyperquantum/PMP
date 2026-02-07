@@ -277,6 +277,75 @@ void TestUtil::normalizeDuration()
     }
 }
 
+void TestUtil::normalizeLongDuration()
+{
+    int years, days;
+
+    {
+        years = 0; days = 0;
+        Util::normalizeLongDuration(years, days);
+
+        QCOMPARE(years, 0);
+        QCOMPARE(days, 0);
+    }
+
+    {
+        years = 3; days = 0;
+        Util::normalizeLongDuration(years, days);
+
+        QCOMPARE(years, 3);
+        QCOMPARE(days, 0);
+    }
+
+    {
+        years = 0; days = 90;
+        Util::normalizeLongDuration(years, days);
+
+        QCOMPARE(years, 0);
+        QCOMPARE(days, 90);
+    }
+
+    {
+        years = 1; days = 7;
+        Util::normalizeLongDuration(years, days);
+
+        QCOMPARE(years, 1);
+        QCOMPARE(days, 7);
+    }
+
+    {
+        years = 2; days = 370;
+        Util::normalizeLongDuration(years, days);
+
+        QCOMPARE(years, 3);
+        QCOMPARE(days, 5);
+    }
+
+    {
+        years = 0; days = 999;
+        Util::normalizeLongDuration(years, days);
+
+        QCOMPARE(years, 2);
+        QCOMPARE(days, 269);
+    }
+
+    {
+        years = 0; days = 365 + 365 + 365 + 365;
+        Util::normalizeLongDuration(years, days);
+
+        QCOMPARE(years, 3);
+        QCOMPARE(days, 365);
+    }
+
+    {
+        years = 0; days = 365 + 365 + 365 + 366;
+        Util::normalizeLongDuration(years, days);
+
+        QCOMPARE(years, 4);
+        QCOMPARE(days, 0);
+    }
+}
+
 void TestUtil::generateZeroedMemory()
 {
     auto a = Util::generateZeroedMemory(29);

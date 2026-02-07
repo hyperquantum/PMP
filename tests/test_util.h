@@ -29,6 +29,7 @@ private Q_SLOTS:
     void getCopyrightLine();
     void getRandomSeed();
     void normalizeDuration();
+    void normalizeLongDuration();
     void secondsToHoursMinuteSecondsText();
     void millisecondsToShortDisplayTimeText();
     void millisecondsToLongDisplayTimeText();

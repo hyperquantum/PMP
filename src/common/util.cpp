@@ -67,6 +67,30 @@ namespace PMP
         hours += extraHours;
     }
 
+    void Util::normalizeLongDuration(int& years, int& days)
+    {
+        const int daysInFourYears = 3 * 365 + 366;
+
+        int fourYearInstances = days / daysInFourYears;
+        int daysLeft = days % daysInFourYears;
+
+        days = daysLeft;
+        years += 4 * fourYearInstances;
+
+        int extraYears = days / 365;
+        int normalizedDays = days % 365;
+
+        // fix the edge case of 4 * 365
+        if (extraYears == 4)
+        {
+            extraYears = 3;
+            normalizedDays += 365;
+        }
+
+        days = normalizedDays;
+        years += extraYears;
+    }
+
     QString Util::secondsToHoursMinuteSecondsText(qint32 totalSeconds)
     {
         if (totalSeconds < 0) { return "?"; }
