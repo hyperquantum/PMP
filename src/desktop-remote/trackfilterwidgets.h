@@ -25,12 +25,51 @@
 #include <QWidget>
 
 QT_FORWARD_DECLARE_CLASS(QComboBox)
+QT_FORWARD_DECLARE_CLASS(QLabel)
 QT_FORWARD_DECLARE_CLASS(QPushButton)
 QT_FORWARD_DECLARE_CLASS(QSpinBox)
 QT_FORWARD_DECLARE_CLASS(QVBoxLayout)
 
 namespace PMP
 {
+    class FilterLabelWidget : public QWidget
+    {
+        Q_OBJECT
+    public:
+        explicit FilterLabelWidget(QWidget* parent);
+
+        void setCriterium(std::unique_ptr<TrackCriterium> criterium);
+
+        std::unique_ptr<TrackCriterium> createCriterium() const;
+
+    private:
+        class CriteriumCaptionGenerator : public TrackCriteriumVisitor
+        {
+        public:
+            QString caption() const { return _caption; }
+
+            void visit(const ConstantTrackCriterium&) override;
+            void visit(const TrackLengthPresenceCriterium&) override;
+            void visit(const TrackLengthComparisonCriterium&) override;
+            void visit(const TrackScorePresenceCriterium&) override;
+            void visit(const TrackScoreComparisonCriterium&) override;
+            void visit(const TrackLastHeardPresenceCriterium&) override;
+            void visit(const TrackLastHeardRecentlyCriterium&) override;
+            void visit(const TrackQueuePresenceCriterium&) override;
+            void visit(const TrackAvailabilityCriterium&) override;
+            void visit(const TrackMetaDataPresenceCriterium&) override;
+            void visit(const CompositeTrackCriterium&) override;
+
+        private:
+            QString toString(ComparisonOperator comparisonOperator);
+
+            QString _caption;
+        };
+
+        std::unique_ptr<TrackCriterium> _criterium;
+        QLabel* _label;
+    };
+
     class FilterPickerWidget : public QWidget
     {
         Q_OBJECT
@@ -135,7 +174,7 @@ namespace PMP
         public:
             explicit EditorWidgetCreationVisitor(QWidget* parent);
 
-            FilterEditorWidget* editorWidget() { return _editorWidget; }
+            FilterEditorWidget* editorWidget() const { return _editorWidget; }
 
             void visit(const ConstantTrackCriterium&) override;
             void visit(const TrackLengthPresenceCriterium&) override;
@@ -173,9 +212,18 @@ namespace PMP
         void onResetClicked();
 
     private:
+        void switchEditorToLabel();
+        void switchToLabel(QWidget* widgetToReplace,
+                           std::unique_ptr<TrackCriterium> criterium);
+        void switchLabelToEditor();
+        void switchPickerToEditor();
+        void switchToEditor(QWidget* widgetToReplace, TrackCriterium const& criterium);
+
+        FilterLabelWidget* _labelWidget;
         FilterPickerWidget* _filterPicker;
         FilterEditorWidget* _editorWidget;
         QPushButton* _editButton;
+        QPushButton* _okButton;
         QPushButton* _deleteButton;
         QPushButton* _resetButton;
     };

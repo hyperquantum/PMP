@@ -32,6 +32,239 @@
 
 namespace PMP
 {
+    FilterLabelWidget::FilterLabelWidget(QWidget *parent)
+     : QWidget(parent)
+    {
+        _label = new QLabel();
+
+        QHBoxLayout* layout = new QHBoxLayout(this);
+        layout->setContentsMargins(0, 0, 0, 0);
+        layout->addWidget(_label);
+    }
+
+    void FilterLabelWidget::setCriterium(std::unique_ptr<TrackCriterium> criterium)
+    {
+        _criterium = std::move(criterium);
+
+        if (!_criterium)
+        {
+            _label->clear();
+            return;
+        }
+
+        CriteriumCaptionGenerator visitor;
+        _criterium->accept(visitor);
+        auto caption = visitor.caption();
+
+        _label->setText(caption);
+    }
+
+    std::unique_ptr<TrackCriterium> FilterLabelWidget::createCriterium() const
+    {
+        return _criterium->clone();
+    }
+
+    void FilterLabelWidget::CriteriumCaptionGenerator::visit(
+        const ConstantTrackCriterium& criterium)
+    {
+        if (criterium.value())
+            _caption = tr("match any track");
+        else
+            _caption = tr("match no tracks");
+    }
+
+    void FilterLabelWidget::CriteriumCaptionGenerator::visit(
+        const TrackLengthPresenceCriterium& criterium)
+    {
+        if (criterium.presence())
+            _caption = tr("length is known");
+        else
+            _caption = tr("length is unknown");
+    }
+
+    void FilterLabelWidget::CriteriumCaptionGenerator::visit(
+        const TrackLengthComparisonCriterium& criterium)
+    {
+        auto caption =
+            tr("length %1 %2:%3:%4")
+                .arg(toString(criterium.comparisonOperator()))
+                .arg(criterium.hours(), 2, 10, QChar('0'))
+                .arg(criterium.minutes(), 2, 10, QChar('0'))
+                .arg(criterium.seconds(), 2, 10, QChar('0'));
+
+        _caption = caption;
+    }
+
+    void FilterLabelWidget::CriteriumCaptionGenerator::visit(
+        const TrackScorePresenceCriterium& criterium)
+    {
+        if (criterium.presence())
+            _caption = tr("with score");
+        else
+            _caption = tr("without score");
+    }
+
+    void FilterLabelWidget::CriteriumCaptionGenerator::visit(
+        const TrackScoreComparisonCriterium& criterium)
+    {
+        auto caption =
+            tr("score %1 %2")
+                .arg(toString(criterium.comparisonOperator()))
+                .arg(criterium.score());
+
+        _caption = caption;
+    }
+
+    void FilterLabelWidget::CriteriumCaptionGenerator::visit(
+        const TrackLastHeardPresenceCriterium& criterium)
+    {
+        if (criterium.presence())
+            _caption = tr("heard at least once");
+        else
+            _caption = tr("never heard");
+    }
+
+    void FilterLabelWidget::CriteriumCaptionGenerator::visit(
+        const TrackLastHeardRecentlyCriterium& criterium)
+    {
+        auto isInverted = criterium.isInverted();
+        auto duration = criterium.duration();
+
+        if (duration.isZero())
+        {
+            if (isInverted)
+            {
+                _caption = tr("not heard in the last 0 seconds");
+            }
+            else
+            {
+                _caption = tr("heard in the last 0 seconds");
+            }
+        }
+        else if (duration.years > 0 && duration.days == 0)
+        {
+            if (isInverted)
+            {
+                _caption = tr("not heard in the last %1 year(s)").arg(duration.years);
+            }
+            else
+            {
+                _caption = tr("heard in the last %1 year(s)").arg(duration.years);
+            }
+        }
+        else if (duration.days > 0 && duration.years == 0)
+        {
+            if (isInverted)
+            {
+                _caption = tr("not heard in the last %1 day(s)").arg(duration.days);
+            }
+            else
+            {
+                _caption = tr("heard in the last %1 day(s)").arg(duration.days);
+            }
+        }
+        else // catch-all case
+        {
+            if (isInverted)
+            {
+                _caption =
+                    tr("not heard in the last %1 year(s) %2 day(s)")
+                        .arg(duration.years)
+                        .arg(duration.days);
+            }
+            else
+            {
+                _caption =
+                    tr("heard in the last %1 year(s) %2 day(s)")
+                        .arg(duration.years)
+                        .arg(duration.days);
+            }
+        }
+    }
+
+    void FilterLabelWidget::CriteriumCaptionGenerator::visit(
+        const TrackQueuePresenceCriterium& criterium)
+    {
+        if (criterium.presence())
+            _caption = tr("in the queue");
+        else
+            _caption = tr("not in the queue");
+    }
+
+    void FilterLabelWidget::CriteriumCaptionGenerator::visit(
+        const TrackAvailabilityCriterium& criterium)
+    {
+        if (criterium.availability())
+            _caption = tr("available");
+        else
+            _caption = tr("no longer available");
+    }
+
+    void FilterLabelWidget::CriteriumCaptionGenerator::visit(
+        const TrackMetaDataPresenceCriterium& criterium)
+    {
+        switch (criterium.metaDataKind())
+        {
+        case TrackMetaDataKind::Title:
+            if (criterium.presence())
+                _caption = tr("with title");
+            else
+                _caption = tr("without title");
+            break;
+        case TrackMetaDataKind::Artist:
+            if (criterium.presence())
+                _caption = tr("with artist");
+            else
+                _caption = tr("without artist");
+            break;
+        case TrackMetaDataKind::Album:
+            if (criterium.presence())
+                _caption = tr("with album");
+            else
+                _caption = tr("without album");
+            break;
+        }
+    }
+
+    void FilterLabelWidget::CriteriumCaptionGenerator::visit(
+        const CompositeTrackCriterium& criterium)
+    {
+        // This function should not be called, because the composite criterium cannot be
+        // put inside a FilterLineWidget yet
+        Q_UNREACHABLE();
+    }
+
+    QString FilterLabelWidget::CriteriumCaptionGenerator::toString(
+        ComparisonOperator comparisonOperator)
+    {
+        QString operatorString;
+        switch (comparisonOperator)
+        {
+        case ComparisonOperator::Equal:
+            operatorString = "=";
+            break;
+        case ComparisonOperator::NotEqual:
+            operatorString = UnicodeChars::notEqual;
+            break;
+        case ComparisonOperator::LessThan:
+            operatorString = "<";
+            break;
+        case ComparisonOperator::LessThanOrEqual:
+            operatorString = UnicodeChars::lessThanOrEqual;
+            break;
+        case ComparisonOperator::GreaterThan:
+            operatorString = ">";
+            break;
+        case ComparisonOperator::GreaterThanOrEqual:
+            operatorString = UnicodeChars::greaterThanOrEqual;
+            break;
+        }
+
+        return operatorString;
+    }
+
+    // =============================================================== //
+
     FilterPickerWidget::FilterPickerWidget(PredefinedTrackCriterium criteriumForEmpty,
                                            QString captionForEmpty)
      : _predefinedCriterium(criteriumForEmpty)
@@ -58,7 +291,7 @@ namespace PMP
                 _predefinedCriterium = predefinedCriterium;
                 Q_EMIT criteriumChanged();
             }
-            );
+        );
     }
 
     void FilterPickerWidget::clearCriterium()
@@ -512,11 +745,13 @@ namespace PMP
     // =============================================================== //
 
     FilterLineWidget::FilterLineWidget()
-     : _editorWidget(nullptr)
+     : _labelWidget(nullptr),
+        _editorWidget(nullptr)
     {
         _filterPicker = new FilterPickerWidget(PredefinedTrackCriterium::AllTracks,
                                                tr("(empty)"));
         _editButton = new QPushButton();
+        _okButton = new QPushButton();
         _deleteButton = new QPushButton();
         _resetButton = new QPushButton();
 
@@ -524,11 +759,15 @@ namespace PMP
         layout->setContentsMargins(0, 0, 0, 0);
         layout->addWidget(_filterPicker, 1);
         layout->addWidget(_editButton, 0);
+        layout->addWidget(_okButton, 0);
         layout->addWidget(_deleteButton, 0);
         layout->addWidget(_resetButton, 0);
 
         _editButton->setText(tr("Edit"));
         _editButton->setEnabled(false);
+
+        _okButton->setText(tr("OK"));
+        _okButton->setVisible(false);
 
         _deleteButton->setIcon(style()->standardIcon(QStyle::SP_DialogDiscardButton));
         _deleteButton->setToolTip(tr("Remove filter"));
@@ -547,6 +786,11 @@ namespace PMP
         );
 
         connect(
+            _okButton, &QPushButton::clicked,
+            this, [this]() { switchEditorToLabel(); }
+        );
+
+        connect(
             _deleteButton, &QPushButton::clicked,
             this, [this]() { Q_EMIT deleteClicked(); }
         );
@@ -559,15 +803,19 @@ namespace PMP
 
     std::unique_ptr<TrackCriterium> FilterLineWidget::createCriterium() const
     {
+        if (_labelWidget)
+            return _labelWidget->createCriterium();
+
         if (_editorWidget)
             return _editorWidget->createCriterium();
 
         return _filterPicker->createCriterium();
     }
 
+
     void FilterLineWidget::onPickerCriteriumChanged()
     {
-        if (_editorWidget)
+        if (_labelWidget || _editorWidget)
             return;
 
         auto criterium = _filterPicker->createCriterium();
@@ -579,16 +827,106 @@ namespace PMP
 
     void FilterLineWidget::onEditClicked()
     {
-        Q_ASSERT_X(_editorWidget == nullptr,
-                   "FilterLineWidget::onEditClicked",
-                   "editor already present!");
+        if (_labelWidget)
+        {
+            switchLabelToEditor();
+        }
+        else
+        {
+            switchPickerToEditor();
+        }
+    }
+
+    void FilterLineWidget::onResetClicked()
+    {
+        if (_labelWidget)
+        {
+            layout()->replaceWidget(_labelWidget, _filterPicker);
+            _labelWidget->setVisible(false);
+            _labelWidget->deleteLater();
+            _labelWidget = nullptr;
+        }
+
+        if (_editorWidget)
+        {
+            layout()->replaceWidget(_editorWidget, _filterPicker);
+            _editorWidget->setVisible(false);
+            _editorWidget->deleteLater();
+            _editorWidget = nullptr;
+        }
+
+        _filterPicker->clearCriterium();
+        _filterPicker->setVisible(true);
+    }
+
+    void FilterLineWidget::switchEditorToLabel()
+    {
+        Q_ASSERT_X(_editorWidget != nullptr,
+                   "FilterLineWidget::switchEditorToLabel",
+                   "editor not present!");
+
+        auto criterium = _editorWidget->createCriterium();
+
+        switchToLabel(_editorWidget, std::move(criterium));
+
+        _editorWidget->deleteLater();
+        _editorWidget = nullptr;
+    }
+
+    void FilterLineWidget::switchToLabel(QWidget* widgetToReplace,
+                                         std::unique_ptr<TrackCriterium> criterium)
+    {
+        Q_ASSERT_X(_labelWidget == nullptr,
+                   "FilterLineWidget::switchToLabel",
+                   "label widget already present!");
+
+        _labelWidget = new FilterLabelWidget(nullptr);
+        _labelWidget->setCriterium(std::move(criterium));
+
+        layout()->replaceWidget(widgetToReplace, _labelWidget);
+        widgetToReplace->setVisible(false);
+
+        _editButton->setEnabled(true);
+        _editButton->setVisible(true);
+        _okButton->setVisible(false);
+    }
+
+    void FilterLineWidget::switchLabelToEditor()
+    {
+        Q_ASSERT_X(_labelWidget != nullptr,
+                   "FilterLineWidget::switchLabelToEditor",
+                   "label widget not present!");
+
+        auto criterium = _labelWidget->createCriterium();
+
+        switchToEditor(_labelWidget, *criterium);
+
+        _labelWidget->deleteLater();
+        _labelWidget = nullptr;
+    }
+
+    void FilterLineWidget::switchPickerToEditor()
+    {
+        Q_ASSERT_X(_labelWidget == nullptr,
+                   "FilterLineWidget::switchPickerToEditor",
+                   "label widget present!");
 
         auto criterium = _filterPicker->createCriterium();
 
-        _editorWidget = FilterEditorFactory::createEditor(nullptr, *criterium);
+        switchToEditor(_filterPicker, *criterium);
+    }
+
+    void FilterLineWidget::switchToEditor(QWidget* widgetToReplace,
+                                          const TrackCriterium& criterium)
+    {
+        Q_ASSERT_X(_editorWidget == nullptr,
+                   "FilterLineWidget::switchToEditor",
+                   "editor already present!");
+
+        _editorWidget = FilterEditorFactory::createEditor(nullptr, criterium);
 
         Q_ASSERT_X(_editorWidget != nullptr,
-                   "FilterLineWidget::onEditClicked",
+                   "FilterLineWidget::switchToEditor",
                    "failed to obtain editor for criterium");
 
         connect(
@@ -596,23 +934,12 @@ namespace PMP
             this, &FilterLineWidget::criteriumChanged
         );
 
-        layout()->replaceWidget(_filterPicker, _editorWidget);
-        _filterPicker->setVisible(false);
+        layout()->replaceWidget(widgetToReplace, _editorWidget);
+        widgetToReplace->setVisible(false);
 
         _editButton->setEnabled(false);
-    }
-
-    void FilterLineWidget::onResetClicked()
-    {
-        if (_editorWidget)
-        {
-            layout()->replaceWidget(_editorWidget, _filterPicker);
-            _editorWidget->deleteLater();
-            _editorWidget = nullptr;
-            _filterPicker->setVisible(true);
-        }
-
-        _filterPicker->clearCriterium();
+        _editButton->setVisible(false);
+        _okButton->setVisible(true);
     }
 
     // =============================================================== //
