@@ -99,6 +99,8 @@ namespace PMP
         auto minutes = criterium.minutes();
         auto seconds = criterium.seconds();
 
+        Util::normalizeDuration(hours, minutes, seconds);
+
         if (hours > 0 && minutes == 0 && seconds == 0)
         {
             _caption = tr("length %1 %2 hour(s)").arg(opStr).arg(hours);
