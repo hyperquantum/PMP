@@ -23,6 +23,8 @@
 #include "common/unicodechars.h"
 #include "common/util.h"
 
+#include "clickablelabel.h"
+
 #include <QComboBox>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -35,11 +37,17 @@ namespace PMP
     FilterLabelWidget::FilterLabelWidget(QWidget *parent)
      : QWidget(parent)
     {
-        _label = new QLabel();
+        _label = new ClickableLabel();
 
         QHBoxLayout* layout = new QHBoxLayout(this);
         layout->setContentsMargins(0, 0, 0, 0);
         layout->addWidget(_label);
+        layout->addStretch();
+
+        connect(
+            _label, &ClickableLabel::clicked,
+            this, &FilterLabelWidget::editingRequested
+        );
     }
 
     void FilterLabelWidget::setCriterium(std::unique_ptr<TrackCriterium> criterium)
@@ -972,6 +980,11 @@ namespace PMP
 
         _labelWidget = new FilterLabelWidget(nullptr);
         _labelWidget->setCriterium(std::move(criterium));
+
+        connect(
+            _labelWidget, &FilterLabelWidget::editingRequested,
+            this, [this] { switchLabelToEditor(); }
+        );
 
         layout()->replaceWidget(widgetToReplace, _labelWidget);
         widgetToReplace->setVisible(false);

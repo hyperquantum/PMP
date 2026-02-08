@@ -32,6 +32,8 @@ QT_FORWARD_DECLARE_CLASS(QVBoxLayout)
 
 namespace PMP
 {
+    class ClickableLabel;
+
     class FilterLabelWidget : public QWidget
     {
         Q_OBJECT
@@ -41,6 +43,9 @@ namespace PMP
         void setCriterium(std::unique_ptr<TrackCriterium> criterium);
 
         std::unique_ptr<TrackCriterium> createCriterium() const;
+
+    Q_SIGNALS:
+        void editingRequested();
 
     private:
         class CriteriumCaptionGenerator : public TrackCriteriumVisitor
@@ -67,7 +72,7 @@ namespace PMP
         };
 
         std::unique_ptr<TrackCriterium> _criterium;
-        QLabel* _label;
+        ClickableLabel* _label;
     };
 
     class FilterPickerWidget : public QWidget
