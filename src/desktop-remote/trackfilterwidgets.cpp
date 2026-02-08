@@ -93,14 +93,33 @@ namespace PMP
     void FilterLabelWidget::CriteriumCaptionGenerator::visit(
         const TrackLengthComparisonCriterium& criterium)
     {
-        auto caption =
-            tr("length %1 %2:%3:%4")
-                .arg(toString(criterium.comparisonOperator()))
-                .arg(criterium.hours(), 2, 10, QChar('0'))
-                .arg(criterium.minutes(), 2, 10, QChar('0'))
-                .arg(criterium.seconds(), 2, 10, QChar('0'));
+        auto opStr = toString(criterium.comparisonOperator());
 
-        _caption = caption;
+        auto hours = criterium.hours();
+        auto minutes = criterium.minutes();
+        auto seconds = criterium.seconds();
+
+        if (hours > 0 && minutes == 0 && seconds == 0)
+        {
+            _caption = tr("length %1 %2 hour(s)").arg(opStr).arg(hours);
+        }
+        else if (hours == 0 && minutes > 0 && seconds == 0)
+        {
+            _caption = tr("length %1 %2 minute(s)").arg(opStr).arg(minutes);
+        }
+        else if (hours == 0 && minutes == 0 && seconds > 0)
+        {
+            _caption = tr("length %1 %2 second(s)").arg(opStr).arg(seconds);
+        }
+        else
+        {
+            _caption =
+                tr("length %1 %2:%3:%4")
+                    .arg(opStr)
+                    .arg(hours, 2, 10, QChar('0'))
+                    .arg(minutes, 2, 10, QChar('0'))
+                    .arg(seconds, 2, 10, QChar('0'));
+        }
     }
 
     void FilterLabelWidget::CriteriumCaptionGenerator::visit(
