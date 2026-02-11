@@ -982,6 +982,10 @@ namespace PMP
 
         _filterPicker->clearCriterium();
         _filterPicker->setVisible(true);
+
+        _editButton->setVisible(true);
+        _editButton->setEnabled(false);
+        _doneButton->setVisible(false);
     }
 
     void FilterLineWidget::switchEditorToLabel()
