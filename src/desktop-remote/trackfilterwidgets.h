@@ -246,7 +246,7 @@ namespace PMP
         FilterPickerWidget* _filterPicker;
         FilterEditorWidget* _editorWidget;
         QPushButton* _editButton;
-        QPushButton* _okButton;
+        QPushButton* _doneButton;
         QPushButton* _deleteButton;
         QPushButton* _resetButton;
     };

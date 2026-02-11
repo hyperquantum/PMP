@@ -871,7 +871,7 @@ namespace PMP
         _filterPicker = new FilterPickerWidget(PredefinedTrackCriterium::AllTracks,
                                                tr("(empty)"));
         _editButton = new QPushButton();
-        _okButton = new QPushButton();
+        _doneButton = new QPushButton();
         _deleteButton = new QPushButton();
         _resetButton = new QPushButton();
 
@@ -879,7 +879,7 @@ namespace PMP
         layout->setContentsMargins(0, 0, 0, 0);
         layout->addWidget(_filterPicker, 1);
         layout->addWidget(_editButton, 0);
-        layout->addWidget(_okButton, 0);
+        layout->addWidget(_doneButton, 0);
         layout->addWidget(_deleteButton, 0);
         layout->addWidget(_resetButton, 0);
 
@@ -889,10 +889,10 @@ namespace PMP
                              style()->standardIcon(QStyle::SP_FileDialogDetailedView)));
         _editButton->setToolTip(tr("Edit filter"));
 
-        _okButton->setVisible(false);
-        _okButton->setIcon(QIcon::fromTheme("dialog-ok-apply",
+        _doneButton->setVisible(false);
+        _doneButton->setIcon(QIcon::fromTheme("dialog-ok-apply",
                            style()->standardIcon(QStyle::SP_DialogApplyButton)));
-        _okButton->setToolTip(tr("Done editing"));
+        _doneButton->setToolTip(tr("Done editing"));
 
         _deleteButton->setIcon(style()->standardIcon(QStyle::SP_DialogDiscardButton));
         _deleteButton->setToolTip(tr("Remove filter"));
@@ -911,7 +911,7 @@ namespace PMP
         );
 
         connect(
-            _okButton, &QPushButton::clicked,
+            _doneButton, &QPushButton::clicked,
             this, [this]() { switchEditorToLabel(); }
         );
 
@@ -1018,7 +1018,7 @@ namespace PMP
 
         _editButton->setEnabled(true);
         _editButton->setVisible(true);
-        _okButton->setVisible(false);
+        _doneButton->setVisible(false);
     }
 
     void FilterLineWidget::switchLabelToEditor()
@@ -1069,7 +1069,7 @@ namespace PMP
 
         _editButton->setEnabled(false);
         _editButton->setVisible(false);
-        _okButton->setVisible(true);
+        _doneButton->setVisible(true);
     }
 
     // =============================================================== //
