@@ -27,6 +27,7 @@
 
 #include <QComboBox>
 #include <QHBoxLayout>
+#include <QIcon>
 #include <QLabel>
 #include <QPushButton>
 #include <QSpinBox>
@@ -882,11 +883,16 @@ namespace PMP
         layout->addWidget(_deleteButton, 0);
         layout->addWidget(_resetButton, 0);
 
-        _editButton->setText(tr("Edit"));
         _editButton->setEnabled(false);
+        _editButton->setIcon(
+            QIcon::fromTheme("document-edit",
+                             style()->standardIcon(QStyle::SP_FileDialogDetailedView)));
+        _editButton->setToolTip(tr("Edit filter"));
 
-        _okButton->setText(tr("OK"));
         _okButton->setVisible(false);
+        _okButton->setIcon(QIcon::fromTheme("dialog-ok-apply",
+                           style()->standardIcon(QStyle::SP_DialogApplyButton)));
+        _okButton->setToolTip(tr("Done editing"));
 
         _deleteButton->setIcon(style()->standardIcon(QStyle::SP_DialogDiscardButton));
         _deleteButton->setToolTip(tr("Remove filter"));
