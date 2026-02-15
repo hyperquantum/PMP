@@ -425,8 +425,9 @@ namespace PMP
     {
         int years { 0 };
         int days { 0 };
+        int hours { 0 };
 
-        bool isZero() const { return years == 0 && days == 0; }
+        bool isZero() const { return years == 0 && days == 0 && hours == 0; }
 
         bool operator==(const CompositeDuration&) const = default;
     };

@@ -153,7 +153,8 @@ namespace PMP
         auto startOfDuration =
             _context.currentDateTimeUtc()
                 .addYears(-duration.years)
-                .addDays(-duration.days);
+                .addDays(-duration.days)
+                .addSecs(-duration.hours * 60 * 60);
 
         _result = criterium.isInverted()
                     ? trackLastHeard.value() <= startOfDuration

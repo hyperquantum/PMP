@@ -67,8 +67,14 @@ namespace PMP
         hours += extraHours;
     }
 
-    void Util::normalizeLongDuration(int& years, int& days)
+    void Util::normalizeLongDuration(int& years, int& days, int& hours)
     {
+        int extraDays = hours / 24;
+        int normalizedHours = hours % 24;
+
+        hours = normalizedHours;
+        days += extraDays;
+
         const int daysInFourYears = 3 * 365 + 366;
 
         int fourYearInstances = days / daysInFourYears;

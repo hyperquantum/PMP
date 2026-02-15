@@ -160,6 +160,8 @@ namespace PMP
         auto isInverted = criterium.isInverted();
         auto duration = criterium.duration();
 
+        Util::normalizeLongDuration(duration.years, duration.days, duration.hours);
+
         if (duration.isZero())
         {
             if (isInverted)
@@ -171,7 +173,7 @@ namespace PMP
                 _caption = tr("heard in the last 0 seconds");
             }
         }
-        else if (duration.years > 0 && duration.days == 0)
+        else if (duration.years > 0 && duration.days == 0 && duration.hours == 0)
         {
             if (isInverted)
             {
@@ -182,7 +184,7 @@ namespace PMP
                 _caption = tr("heard in the last %1 year(s)").arg(duration.years);
             }
         }
-        else if (duration.days > 0 && duration.years == 0)
+        else if (duration.days > 0 && duration.years == 0 && duration.hours == 0)
         {
             if (isInverted)
             {
@@ -193,21 +195,64 @@ namespace PMP
                 _caption = tr("heard in the last %1 day(s)").arg(duration.days);
             }
         }
+        else if (duration.hours > 0 && duration.years == 0 && duration.days == 0)
+        {
+            if (isInverted)
+            {
+                _caption = tr("not heard in the last %1 hour(s)").arg(duration.hours);
+            }
+            else
+            {
+                _caption = tr("heard in the last %1 hour(s)").arg(duration.hours);
+            }
+        }
+        else if (duration.days > 0 && duration.hours > 0 && duration.years == 0)
+        {
+            if (isInverted)
+            {
+                _caption = tr("not heard in the last %1 day(s) %2 hour(s)")
+                               .arg(duration.days)
+                               .arg(duration.hours);
+            }
+            else
+            {
+                _caption = tr("heard in the last %1 day(s) %2 hour(s)")
+                               .arg(duration.days)
+                               .arg(duration.hours);
+            }
+        }
+        else if (duration.years > 0 && duration.days > 0 && duration.hours == 0)
+        {
+            if (isInverted)
+            {
+                _caption = tr("not heard in the last %1 year(s) %2 day(s)")
+                               .arg(duration.years)
+                               .arg(duration.days);
+            }
+            else
+            {
+                _caption = tr("heard in the last %1 year(s) %2 day(s)")
+                               .arg(duration.years)
+                               .arg(duration.days);
+            }
+        }
         else // catch-all case
         {
             if (isInverted)
             {
                 _caption =
-                    tr("not heard in the last %1 year(s) %2 day(s)")
+                    tr("not heard in the last %1 year(s) %2 day(s) %3 hour(s)")
                         .arg(duration.years)
-                        .arg(duration.days);
+                        .arg(duration.days)
+                        .arg(duration.hours);
             }
             else
             {
                 _caption =
-                    tr("heard in the last %1 year(s) %2 day(s)")
+                    tr("heard in the last %1 year(s) %2 day(s) %3 hour(s)")
                         .arg(duration.years)
-                        .arg(duration.days);
+                        .arg(duration.days)
+                        .arg(duration.hours);
             }
         }
     }
@@ -524,6 +569,8 @@ namespace PMP
         auto* yearsLabel = new QLabel(tr("years"));
         _daysSpinBox = new QSpinBox();
         auto* daysLabel = new QLabel(tr("days"));
+        _hoursSpinBox = new QSpinBox();
+        auto* hoursLabel = new QLabel(tr("hours"));
 
         QHBoxLayout* layout = new QHBoxLayout(this);
         layout->setContentsMargins(0, 0, 0, 0);
@@ -532,6 +579,8 @@ namespace PMP
         layout->addWidget(yearsLabel);
         layout->addWidget(_daysSpinBox);
         layout->addWidget(daysLabel);
+        layout->addWidget(_hoursSpinBox);
+        layout->addWidget(hoursLabel);
         layout->addStretch();
 
         _inversionComboBox->addItem(tr("heard within"));
@@ -553,6 +602,11 @@ namespace PMP
             _daysSpinBox, &QSpinBox::valueChanged,
             this, [this]() { if (!_suspendChangeSignal) Q_EMIT criteriumChanged(); }
         );
+
+        connect(
+            _hoursSpinBox, &QSpinBox::valueChanged,
+            this, [this]() { if (!_suspendChangeSignal) Q_EMIT criteriumChanged(); }
+        );
     }
 
     void LastHeardEditorWidget::setInverted(bool isInverted)
@@ -560,9 +614,9 @@ namespace PMP
         _inversionComboBox->setCurrentIndex(isInverted ? 1 : 0);
     }
 
-    void LastHeardEditorWidget::setPeriod(int years, int days)
+    void LastHeardEditorWidget::setPeriod(int years, int days, int hours)
     {
-        Util::normalizeLongDuration(years, days);
+        Util::normalizeLongDuration(years, days, hours);
 
         Q_ASSERT_X(years >= 0 && years < 100,
                    "LastHeardEditorWidget::setPeriod",
@@ -572,10 +626,15 @@ namespace PMP
                    "LastHeardEditorWidget::setPeriod",
                    "days out of range");
 
+        Q_ASSERT_X(hours >= 0 && hours < 100,
+                   "LastHeardEditorWidget::setPeriod",
+                   "hours out of range");
+
         _suspendChangeSignal++;
 
         _yearsSpinBox->setValue(years);
         _daysSpinBox->setValue(days);
+        _hoursSpinBox->setValue(hours);
 
         _suspendChangeSignal--;
 
@@ -591,11 +650,15 @@ namespace PMP
 
         bool isInverted = inversionIndex == 1;
 
-        int years = _yearsSpinBox->value();
-        int days = _daysSpinBox->value();
+        auto duration =
+            CompositeDuration
+            {
+                .years = _yearsSpinBox->value(),
+                .days = _daysSpinBox->value(),
+                .hours = _hoursSpinBox->value()
+            };
 
-        return std::make_unique<TrackLastHeardRecentlyCriterium>(
-            CompositeDuration { .years = years, .days = days }, isInverted);
+        return std::make_unique<TrackLastHeardRecentlyCriterium>(duration, isInverted);
     }
 
     // =============================================================== //
@@ -832,7 +895,7 @@ namespace PMP
         auto period = criterium.duration();
 
         auto* editor = new LastHeardEditorWidget(_parent);
-        editor->setPeriod(period.years, period.days);
+        editor->setPeriod(period.years, period.days, period.hours);
         editor->setInverted(criterium.isInverted());
 
         _editorWidget = editor;

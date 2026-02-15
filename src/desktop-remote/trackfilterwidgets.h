@@ -134,7 +134,7 @@ namespace PMP
         explicit LastHeardEditorWidget(QWidget* parent);
 
         void setInverted(bool isInverted);
-        void setPeriod(int years, int days);
+        void setPeriod(int years, int days, int hours);
 
         std::unique_ptr<TrackCriterium> createCriterium() const override;
 
@@ -142,6 +142,7 @@ namespace PMP
         QComboBox* _inversionComboBox;
         QSpinBox* _yearsSpinBox;
         QSpinBox* _daysSpinBox;
+        QSpinBox* _hoursSpinBox;
         quint8 _suspendChangeSignal { 0 };
     };
 

@@ -279,70 +279,105 @@ void TestUtil::normalizeDuration()
 
 void TestUtil::normalizeLongDuration()
 {
-    int years, days;
+    int years, days, hours;
 
     {
-        years = 0; days = 0;
-        Util::normalizeLongDuration(years, days);
+        years = 0; days = 0; hours = 0;
+        Util::normalizeLongDuration(years, days, hours);
 
         QCOMPARE(years, 0);
         QCOMPARE(days, 0);
+        QCOMPARE(hours, 0);
     }
 
     {
-        years = 3; days = 0;
-        Util::normalizeLongDuration(years, days);
+        years = 0; days = 0; hours = 4;
+        Util::normalizeLongDuration(years, days, hours);
+
+        QCOMPARE(years, 0);
+        QCOMPARE(days, 0);
+        QCOMPARE(hours, 4);
+    }
+
+    {
+        years = 0; days = 1; hours = 30;
+        Util::normalizeLongDuration(years, days, hours);
+
+        QCOMPARE(years, 0);
+        QCOMPARE(days, 2);
+        QCOMPARE(hours, 6);
+    }
+
+    {
+        years = 0; days = 0; hours = 365 * 24 + 15;
+        Util::normalizeLongDuration(years, days, hours);
+
+        QCOMPARE(years, 1);
+        QCOMPARE(days, 0);
+        QCOMPARE(hours, 15);
+    }
+
+    {
+        years = 3; days = 0; hours = 0;
+        Util::normalizeLongDuration(years, days, hours);
 
         QCOMPARE(years, 3);
         QCOMPARE(days, 0);
+        QCOMPARE(hours, 0);
     }
 
     {
-        years = 0; days = 90;
-        Util::normalizeLongDuration(years, days);
+        years = 0; days = 90; hours = 0;
+        Util::normalizeLongDuration(years, days, hours);
 
         QCOMPARE(years, 0);
         QCOMPARE(days, 90);
+        QCOMPARE(hours, 0);
     }
 
     {
-        years = 1; days = 7;
-        Util::normalizeLongDuration(years, days);
+        years = 1; days = 7; hours = 0;
+        Util::normalizeLongDuration(years, days, hours);
 
         QCOMPARE(years, 1);
         QCOMPARE(days, 7);
+        QCOMPARE(hours, 0);
     }
 
     {
-        years = 2; days = 370;
-        Util::normalizeLongDuration(years, days);
+        years = 2; days = 370; hours = 0;
+        Util::normalizeLongDuration(years, days, hours);
 
         QCOMPARE(years, 3);
         QCOMPARE(days, 5);
+        QCOMPARE(hours, 0);
     }
 
     {
-        years = 0; days = 999;
-        Util::normalizeLongDuration(years, days);
+        years = 0; days = 999; hours = 0;
+        Util::normalizeLongDuration(years, days, hours);
 
         QCOMPARE(years, 2);
         QCOMPARE(days, 269);
+        QCOMPARE(hours, 0);
     }
 
     {
-        years = 0; days = 365 + 365 + 365 + 365;
-        Util::normalizeLongDuration(years, days);
+        years = 0; days = 365 + 365 + 365 + 365; hours = 0;
+        Util::normalizeLongDuration(years, days, hours);
 
         QCOMPARE(years, 3);
         QCOMPARE(days, 365);
+        QCOMPARE(hours, 0);
     }
 
     {
-        years = 0; days = 365 + 365 + 365 + 366;
-        Util::normalizeLongDuration(years, days);
+        years = 0; days = 365 + 365 + 365 + 366; hours = 0;
+        Util::normalizeLongDuration(years, days, hours);
 
         QCOMPARE(years, 4);
         QCOMPARE(days, 0);
+        QCOMPARE(hours, 0);
     }
 }
 
