@@ -23,42 +23,6 @@
 
 namespace PMP
 {
-    namespace
-    {
-        std::unique_ptr<TrackCriterium> createLengthLessThanCriterium(
-            int lengthMinutesCeiling)
-        {
-            return std::make_unique<TrackLengthComparisonCriterium>(
-                ComparisonOperator::LessThan, 0, lengthMinutesCeiling, 0);
-        }
-
-        std::unique_ptr<TrackCriterium> createLengthAtLeastCriterium(
-            int minimumLengthMinutes)
-        {
-            return std::make_unique<TrackLengthComparisonCriterium>(
-                ComparisonOperator::GreaterThanOrEqual, 0, minimumLengthMinutes, 0);
-        }
-
-        std::unique_ptr<TrackCriterium> createScoreLessThanCriterium(short scoreCeiling)
-        {
-            return std::make_unique<TrackScoreComparisonCriterium>(
-                ComparisonOperator::LessThan, scoreCeiling);
-        }
-
-        std::unique_ptr<TrackCriterium> createScoreAtLeastCriterium(short minimumScore)
-        {
-            return std::make_unique<TrackScoreComparisonCriterium>(
-                ComparisonOperator::GreaterThanOrEqual, minimumScore);
-        }
-
-        std::unique_ptr<TrackCriterium> createNotRecentlyHeardCriterium(
-            CompositeDuration duration)
-        {
-            return std::make_unique<TrackLastHeardRecentlyCriterium>(
-                duration, /* isInverted: */ true);
-        }
-    }
-
     std::unique_ptr<TrackCriterium> convertToTrackCriterium(
         PredefinedTrackCriterium criterium)
     {
@@ -71,107 +35,106 @@ namespace PMP
             return ConstantTrackCriterium::noTracksMatch();
 
         case PredefinedTrackCriterium::NeverHeard:
-            return TrackLastHeardPresenceCriterium::lastHeardMustBeAbsent();
+            return TrackCriteriumFactory::neverHeard();
 
         case PredefinedTrackCriterium::NotHeardInLast5Years:
-            return createNotRecentlyHeardCriterium(CompositeDuration { .years = 5 });
+            return TrackCriteriumFactory::notRecentlyHeard({ .years = 5 });
 
         case PredefinedTrackCriterium::NotHeardInLast3Years:
-            return createNotRecentlyHeardCriterium(CompositeDuration { .years = 3 });
+            return TrackCriteriumFactory::notRecentlyHeard({ .years = 3 });
 
         case PredefinedTrackCriterium::NotHeardInLast2Years:
-            return createNotRecentlyHeardCriterium(CompositeDuration { .years = 2 });
+            return TrackCriteriumFactory::notRecentlyHeard({ .years = 2 });
 
         case PredefinedTrackCriterium::NotHeardInLastYear:
-            return createNotRecentlyHeardCriterium(CompositeDuration { .years = 1 });
+            return TrackCriteriumFactory::notRecentlyHeard({ .years = 1 });
 
         case PredefinedTrackCriterium::NotHeardInLast180Days:
-            return createNotRecentlyHeardCriterium(CompositeDuration { .days = 180 });
+            return TrackCriteriumFactory::notRecentlyHeard({ .days = 180 });
 
         case PredefinedTrackCriterium::NotHeardInLast90Days:
-            return createNotRecentlyHeardCriterium(CompositeDuration { .days = 90 });
+            return TrackCriteriumFactory::notRecentlyHeard({ .days = 90 });
 
         case PredefinedTrackCriterium::NotHeardInLast30Days:
-            return createNotRecentlyHeardCriterium(CompositeDuration { .days = 30 });
+            return TrackCriteriumFactory::notRecentlyHeard({ .days = 30 });
 
         case PredefinedTrackCriterium::NotHeardInLast10Days:
-            return createNotRecentlyHeardCriterium(CompositeDuration { .days = 10 });
+            return TrackCriteriumFactory::notRecentlyHeard({ .days = 10 });
 
         case PredefinedTrackCriterium::HeardAtLeastOnce:
-            return TrackLastHeardPresenceCriterium::lastHeardMustBePresent();
+            return TrackCriteriumFactory::heardAtLeastOnce();
 
         case PredefinedTrackCriterium::WithoutScore:
-            return TrackScorePresenceCriterium::scoreMustBeAbsent();
+            return TrackCriteriumFactory::scoreMustBeAbsent();
 
         case PredefinedTrackCriterium::WithScore:
-            return TrackScorePresenceCriterium::scoreMustBePresent();
+            return TrackCriteriumFactory::scoreMustBePresent();
 
         case PredefinedTrackCriterium::ScoreLessThan30:
-            return createScoreLessThanCriterium(30);
+            return TrackCriteriumFactory::scoreLessThanXPercent(30);
 
         case PredefinedTrackCriterium::ScoreLessThan50:
-            return createScoreLessThanCriterium(50);
+            return TrackCriteriumFactory::scoreLessThanXPercent(50);
 
         case PredefinedTrackCriterium::ScoreAtLeast80:
-            return createScoreAtLeastCriterium(80);
+            return TrackCriteriumFactory::scoreAtLeastXPercent(80);
 
         case PredefinedTrackCriterium::ScoreAtLeast85:
-            return createScoreAtLeastCriterium(85);
+            return TrackCriteriumFactory::scoreAtLeastXPercent(85);
 
         case PredefinedTrackCriterium::ScoreAtLeast90:
-            return createScoreAtLeastCriterium(90);
+            return TrackCriteriumFactory::scoreAtLeastXPercent(90);
 
         case PredefinedTrackCriterium::ScoreAtLeast95:
-            return createScoreAtLeastCriterium(95);
+            return TrackCriteriumFactory::scoreAtLeastXPercent(95);
 
         case PredefinedTrackCriterium::LengthLessThanOneMinute:
-            return createLengthLessThanCriterium(1);
+            return TrackCriteriumFactory::lengthLessThanXMinutes(1);
 
         case PredefinedTrackCriterium::LengthAtLeastOneMinute:
-            return createLengthAtLeastCriterium(1);
+            return TrackCriteriumFactory::lengthAtLeastXMinutes(1);
 
         case PredefinedTrackCriterium::LengthLessThanTwoMinutes:
-            return createLengthLessThanCriterium(2);
+            return TrackCriteriumFactory::lengthLessThanXMinutes(2);
 
         case PredefinedTrackCriterium::LengthAtLeastTwoMinutes:
-            return createLengthAtLeastCriterium(2);
+            return TrackCriteriumFactory::lengthAtLeastXMinutes(2);
 
         case PredefinedTrackCriterium::LengthLessThanThreeMinutes:
-            return createLengthLessThanCriterium(3);
+            return TrackCriteriumFactory::lengthLessThanXMinutes(3);
 
         case PredefinedTrackCriterium::LengthAtLeastThreeMinutes:
-            return createLengthAtLeastCriterium(3);
+            return TrackCriteriumFactory::lengthAtLeastXMinutes(3);
 
         case PredefinedTrackCriterium::LengthLessThanFourMinutes:
-            return createLengthLessThanCriterium(4);
+            return TrackCriteriumFactory::lengthLessThanXMinutes(4);
 
         case PredefinedTrackCriterium::LengthAtLeastFourMinutes:
-            return createLengthAtLeastCriterium(4);
+            return TrackCriteriumFactory::lengthAtLeastXMinutes(4);
 
         case PredefinedTrackCriterium::LengthLessThanFiveMinutes:
-            return createLengthLessThanCriterium(5);
+            return TrackCriteriumFactory::lengthLessThanXMinutes(5);
 
         case PredefinedTrackCriterium::LengthAtLeastFiveMinutes:
-            return createLengthAtLeastCriterium(5);
+            return TrackCriteriumFactory::lengthAtLeastXMinutes(5);
 
         case PredefinedTrackCriterium::NotInTheQueue:
-            return TrackQueuePresenceCriterium::mustBeAbsentInQueue();
+            return TrackCriteriumFactory::notInTheQueue();
 
         case PredefinedTrackCriterium::InTheQueue:
-            return TrackQueuePresenceCriterium::mustBePresentInQueue();
+            return TrackCriteriumFactory::inTheQueue();
 
         case PredefinedTrackCriterium::WithoutTitle:
-            return TrackMetaDataPresenceCriterium::mustBeAbsent(TrackMetaDataKind::Title);
+            return TrackCriteriumFactory::withoutTitle();
 
         case PredefinedTrackCriterium::WithoutArtist:
-            return TrackMetaDataPresenceCriterium::mustBeAbsent(
-                TrackMetaDataKind::Artist);
+            return TrackCriteriumFactory::withoutArtist();
 
         case PredefinedTrackCriterium::WithoutAlbum:
-            return TrackMetaDataPresenceCriterium::mustBeAbsent(TrackMetaDataKind::Album);
+            return TrackCriteriumFactory::withoutAlbum();
 
         case PredefinedTrackCriterium::NoLongerAvailable:
-            return TrackAvailabilityCriterium::mustBeUnavailable();
+            return TrackCriteriumFactory::unavailable();
         }
 
         /* should be unreachable because we handled all enum values */

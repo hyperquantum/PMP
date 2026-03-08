@@ -168,8 +168,8 @@ namespace PMP
     {
     public:
         static bool isEditable(TrackCriterium const& criterium);
-        static FilterEditorWidget* createEditor(QWidget* parent,
-                                                TrackCriterium const& criterium);
+        static FilterEditorWidget* createFromCriterium(QWidget* parent,
+                                                       TrackCriterium const& criterium);
 
     private:
         class IsEditableVisitor final : public TrackCriteriumVisitor
@@ -223,6 +223,8 @@ namespace PMP
         Q_OBJECT
     public:
         FilterLineWidget();
+        FilterLineWidget(std::unique_ptr<TrackCriterium> criterium);
+        FilterLineWidget(FilterEditorWidget* editor);
 
         std::unique_ptr<TrackCriterium> createCriterium() const;
 
@@ -236,12 +238,14 @@ namespace PMP
         void onResetClicked();
 
     private:
+        void init();
         void switchEditorToLabel();
         void switchToLabel(QWidget* widgetToReplace,
                            std::unique_ptr<TrackCriterium> criterium);
         void switchLabelToEditor();
         void switchPickerToEditor();
         void switchToEditor(QWidget* widgetToReplace, TrackCriterium const& criterium);
+        void switchToEditor(QWidget* widgetToReplace, FilterEditorWidget* editor);
 
         FilterLabelWidget* _labelWidget;
         FilterPickerWidget* _filterPicker;
@@ -263,10 +267,14 @@ namespace PMP
     Q_SIGNALS:
         void criteriumChanged();
 
-    private:
-        void addFilterLine();
+    private Q_SLOTS:
+        void showAddMenu();
 
-        QPushButton* _addButton;
+    private:
+        void addFilterLine(std::unique_ptr<TrackCriterium> criterium);
+        void addFilterLine(FilterLineWidget* filterLine);
+
+        QPushButton* _addMenuButton;
         QVBoxLayout* _verticalLayout;
         QList<FilterLineWidget*> _filters;
     };

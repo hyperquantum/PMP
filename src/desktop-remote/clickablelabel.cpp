@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,16 +23,25 @@
 
 namespace PMP
 {
-
     ClickableLabel::ClickableLabel(QWidget* parent, Qt::WindowFlags f)
      : QLabel(parent, f)
     {
-        setCursor(QCursor(Qt::PointingHandCursor));
+        setCursor(Qt::PointingHandCursor);
     }
 
-    ClickableLabel::~ClickableLabel()
+    void ClickableLabel::setClickable(bool clickable)
     {
-        //
+        if (_clickable == clickable)
+            return;
+
+        _clickable = clickable;
+
+        if (_clickable)
+            setCursor(Qt::PointingHandCursor);
+        else
+            unsetCursor();
+
+        Q_EMIT clickableChanged();
     }
 
     ClickableLabel* ClickableLabel::replace(QLabel*& existingLabel)
@@ -55,7 +64,9 @@ namespace PMP
     {
         Q_UNUSED(event)
 
+        if (!_clickable)
+            return;
+
         Q_EMIT clicked();
     }
-
 }

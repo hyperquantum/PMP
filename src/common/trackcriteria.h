@@ -675,6 +675,118 @@ namespace PMP
     private:
         std::vector<std::unique_ptr<TrackCriterium>> _criteria;
     };
+
+    class TrackCriteriumFactory
+    {
+    public:
+        static std::unique_ptr<TrackCriterium> lengthLessThanXMinutes(int minutes)
+        {
+            return std::make_unique<TrackLengthComparisonCriterium>(
+                ComparisonOperator::LessThan, 0, minutes, 0);
+        }
+
+        static std::unique_ptr<TrackCriterium> lengthAtLeastXMinutes(int minutes)
+        {
+            return std::make_unique<TrackLengthComparisonCriterium>(
+                ComparisonOperator::GreaterThanOrEqual, 0, minutes, 0);
+        }
+
+        static std::unique_ptr<TrackCriterium> scoreMustBePresent()
+        {
+            return TrackScorePresenceCriterium::scoreMustBePresent();
+        }
+
+        static std::unique_ptr<TrackCriterium> scoreMustBeAbsent()
+        {
+            return TrackScorePresenceCriterium::scoreMustBeAbsent();
+        }
+
+        static std::unique_ptr<TrackCriterium> scoreLessThanXPercent(short percent)
+        {
+            return std::make_unique<TrackScoreComparisonCriterium>(
+                ComparisonOperator::LessThan, percent);
+        }
+
+        static std::unique_ptr<TrackCriterium> scoreAtLeastXPercent(short percent)
+        {
+            return std::make_unique<TrackScoreComparisonCriterium>(
+                ComparisonOperator::GreaterThanOrEqual, percent);
+        }
+
+        static std::unique_ptr<TrackCriterium> notRecentlyHeard(
+            CompositeDuration duration)
+        {
+            return std::make_unique<TrackLastHeardRecentlyCriterium>(
+                duration, /* isInverted: */ true);
+        }
+
+        static std::unique_ptr<TrackCriterium> neverHeard()
+        {
+            return TrackLastHeardPresenceCriterium::lastHeardMustBeAbsent();
+        }
+
+        static std::unique_ptr<TrackCriterium> heardAtLeastOnce()
+        {
+            return TrackLastHeardPresenceCriterium::lastHeardMustBePresent();
+        }
+
+        static std::unique_ptr<TrackCriterium> inTheQueue()
+        {
+            return TrackQueuePresenceCriterium::mustBePresentInQueue();
+        }
+
+        static std::unique_ptr<TrackCriterium> notInTheQueue()
+        {
+            return TrackQueuePresenceCriterium::mustBeAbsentInQueue();
+        }
+
+        static std::unique_ptr<TrackCriterium> available()
+        {
+            return TrackAvailabilityCriterium::mustBeAvailable();
+        }
+
+        static std::unique_ptr<TrackCriterium> unavailable()
+        {
+            return TrackAvailabilityCriterium::mustBeUnavailable();
+        }
+
+        static std::unique_ptr<TrackCriterium> withTitle()
+        {
+            return TrackMetaDataPresenceCriterium::mustBePresent(
+                TrackMetaDataKind::Title);
+        }
+
+        static std::unique_ptr<TrackCriterium> withoutTitle()
+        {
+            return TrackMetaDataPresenceCriterium::mustBeAbsent(TrackMetaDataKind::Title);
+        }
+
+        static std::unique_ptr<TrackCriterium> withArtist()
+        {
+            return TrackMetaDataPresenceCriterium::mustBePresent(
+                TrackMetaDataKind::Artist);
+        }
+
+        static std::unique_ptr<TrackCriterium> withoutArtist()
+        {
+            return TrackMetaDataPresenceCriterium::mustBeAbsent(
+                TrackMetaDataKind::Artist);
+        }
+
+        static std::unique_ptr<TrackCriterium> withAlbum()
+        {
+            return TrackMetaDataPresenceCriterium::mustBePresent(
+                TrackMetaDataKind::Album);
+        }
+
+        static std::unique_ptr<TrackCriterium> withoutAlbum()
+        {
+            return TrackMetaDataPresenceCriterium::mustBeAbsent(TrackMetaDataKind::Album);
+        }
+
+    private:
+        TrackCriteriumFactory() = delete;
+    };
 }
 
 Q_DECLARE_METATYPE(PMP::PredefinedTrackCriterium)

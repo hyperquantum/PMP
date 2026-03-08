@@ -46,6 +46,14 @@ namespace PMP
 
             return s.value().trimmed().isEmpty();
         }
+
+        TriBool stringIsNotEmpty(Nullable<QString> s)
+        {
+            if (s.isNull())
+                return TriBool::unknown;
+
+            return !s.value().trimmed().isEmpty();
+        }
     }
 
     TriBool TrackCriteriumEvaluator::evaluate(const TrackCriterium& criterium,
@@ -176,15 +184,24 @@ namespace PMP
         switch (criterium.metaDataKind())
         {
         case TrackMetaDataKind::Title:
-            _result = stringIsEmpty(_context.title());
+            _result =
+                criterium.presence()
+                          ? stringIsNotEmpty(_context.title())
+                          : stringIsEmpty(_context.title());
             return;
 
         case TrackMetaDataKind::Artist:
-            _result = stringIsEmpty(_context.artist());
+            _result =
+                criterium.presence()
+                    ? stringIsNotEmpty(_context.artist())
+                    : stringIsEmpty(_context.artist());
             return;
 
         case TrackMetaDataKind::Album:
-            _result = stringIsEmpty(_context.album());
+            _result =
+                criterium.presence()
+                    ? stringIsNotEmpty(_context.album())
+                    : stringIsEmpty(_context.album());
             return;
         }
 
