@@ -1184,8 +1184,6 @@ namespace PMP
         _verticalLayout = new QVBoxLayout(this);
         _verticalLayout->setContentsMargins(0, 0, 0, 0);
 
-        addFilterLine(new FilterLineWidget());
-
         auto* buttonsLayout = new QHBoxLayout();
         _verticalLayout->addLayout(buttonsLayout);
 
