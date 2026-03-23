@@ -226,6 +226,7 @@ namespace PMP
         FilterLineWidget(std::unique_ptr<TrackCriterium> criterium);
         FilterLineWidget(FilterEditorWidget* editor);
 
+        bool isEmpty() const { return _isEmpty; }
         std::unique_ptr<TrackCriterium> createCriterium() const;
 
     Q_SIGNALS:
@@ -233,27 +234,28 @@ namespace PMP
         void deleteClicked();
 
     private Q_SLOTS:
-        void onPickerCriteriumChanged();
+        void onEmptyLabelClicked(QPoint position);
         void onEditClicked();
         void onResetClicked();
 
     private:
         void init();
+        void switchToEmpty(QWidget* widgetToReplace);
         void switchEditorToLabel();
         void switchToLabel(QWidget* widgetToReplace,
                            std::unique_ptr<TrackCriterium> criterium);
         void switchLabelToEditor();
-        void switchPickerToEditor();
         void switchToEditor(QWidget* widgetToReplace, TrackCriterium const& criterium);
         void switchToEditor(QWidget* widgetToReplace, FilterEditorWidget* editor);
 
+        ClickableLabel* _emptyFilterLabel;
         FilterLabelWidget* _labelWidget;
-        FilterPickerWidget* _filterPicker;
         FilterEditorWidget* _editorWidget;
         QPushButton* _editButton;
         QPushButton* _doneButton;
         QPushButton* _deleteButton;
         QPushButton* _resetButton;
+        bool _isEmpty;
     };
 
     class FiltersListWidget : public QWidget

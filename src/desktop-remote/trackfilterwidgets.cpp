@@ -26,6 +26,7 @@
 #include "clickablelabel.h"
 
 #include <QComboBox>
+#include <QCoreApplication>
 #include <QHBoxLayout>
 #include <QIcon>
 #include <QLabel>
@@ -33,6 +34,8 @@
 #include <QPushButton>
 #include <QSpinBox>
 #include <QVBoxLayout>
+
+#include <functional>
 
 namespace PMP
 {
@@ -511,6 +514,217 @@ namespace PMP
 
             return comparisonOperator;
         }
+
+        inline QString filtersMenuTr(const char* text)
+        {
+            return QCoreApplication::translate("TrackFilterMenu", text);
+        }
+
+        void displayFiltersPopupMenu(QWidget* parent, QPoint globalPopupPosition,
+                        std::function<void (std::unique_ptr<TrackCriterium>)> setFilter)
+        {
+            QMenu menu(parent);
+
+            // Category: Score
+            QMenu* scoreMenu = menu.addMenu(filtersMenuTr("Score"));
+
+            scoreMenu->addAction(
+                filtersMenuTr("Less than 30"),
+                [setFilter]() { setFilter(
+                                    TrackCriteriumFactory::scoreLessThanXPercent(30)); }
+            );
+
+            scoreMenu->addAction(
+                filtersMenuTr("Less than 50"),
+                [setFilter]() { setFilter(
+                                    TrackCriteriumFactory::scoreLessThanXPercent(50)); }
+            );
+
+            scoreMenu->addAction(
+                filtersMenuTr("At least 80"),
+                [setFilter]() { setFilter(
+                                    TrackCriteriumFactory::scoreAtLeastXPercent(80)); }
+            );
+
+            scoreMenu->addAction(
+                filtersMenuTr("At least 85"),
+                [setFilter]() { setFilter(
+                                    TrackCriteriumFactory::scoreAtLeastXPercent(85)); }
+            );
+
+            scoreMenu->addAction(
+                filtersMenuTr("At least 90"),
+                [setFilter]() { setFilter(
+                                    TrackCriteriumFactory::scoreAtLeastXPercent(90)); }
+            );
+
+            scoreMenu->addSeparator();
+
+            scoreMenu->addAction(
+                filtersMenuTr("Has score"),
+                [setFilter]() { setFilter(
+                                    TrackCriteriumFactory::scoreMustBePresent()); }
+            );
+
+            scoreMenu->addAction(
+                filtersMenuTr("No score"),
+                [setFilter]() { setFilter(
+                                    TrackCriteriumFactory::scoreMustBeAbsent()); }
+            );
+
+            // Category: Length
+            QMenu* lengthMenu = menu.addMenu(filtersMenuTr("Length"));
+
+            lengthMenu->addAction(
+                filtersMenuTr("Less than 3 minutes"),
+                [setFilter]() { setFilter(
+                                    TrackCriteriumFactory::lengthLessThanXMinutes(3)); }
+            );
+
+            lengthMenu->addAction(
+                filtersMenuTr("At least 3 minutes"),
+                [setFilter]() { setFilter(
+                                    TrackCriteriumFactory::lengthAtLeastXMinutes(3)); }
+            );
+
+            lengthMenu->addAction(
+                filtersMenuTr("Less than 4 minutes"),
+                [setFilter]() { setFilter(
+                                    TrackCriteriumFactory::lengthLessThanXMinutes(4)); }
+            );
+
+            lengthMenu->addAction(
+                filtersMenuTr("At least 4 minutes"),
+                [setFilter]() { setFilter(
+                                    TrackCriteriumFactory::lengthAtLeastXMinutes(4)); }
+            );
+
+            lengthMenu->addAction(
+                filtersMenuTr("Less than 5 minutes"),
+                [setFilter]() { setFilter(
+                                    TrackCriteriumFactory::lengthLessThanXMinutes(5)); }
+            );
+
+            lengthMenu->addAction(
+                filtersMenuTr("At least 5 minutes"),
+                [setFilter]() { setFilter(
+                                    TrackCriteriumFactory::lengthAtLeastXMinutes(5)); }
+            );
+
+            // Category: last heard
+            QMenu* lastHeardMenu = menu.addMenu(filtersMenuTr("Last heard"));
+
+            lastHeardMenu->addAction(
+                filtersMenuTr("More than 2 years ago"),
+                [setFilter]() { setFilter(
+                               TrackCriteriumFactory::notRecentlyHeard({ .years = 2 })); }
+            );
+
+            lastHeardMenu->addAction(
+                filtersMenuTr("More than a year ago"),
+                [setFilter]() { setFilter(
+                               TrackCriteriumFactory::notRecentlyHeard({ .years = 1 })); }
+            );
+
+            lastHeardMenu->addAction(
+                filtersMenuTr("More than 90 days ago"),
+                [setFilter]() { setFilter(
+                               TrackCriteriumFactory::notRecentlyHeard({ .days = 90 })); }
+            );
+
+            lastHeardMenu->addAction(
+                filtersMenuTr("More than 7 days ago"),
+                [setFilter]() { setFilter(
+                               TrackCriteriumFactory::notRecentlyHeard({ .days = 7 })); }
+            );
+
+            lastHeardMenu->addAction(
+                filtersMenuTr("More than 8 hours ago"),
+                [setFilter]() { setFilter(
+                               TrackCriteriumFactory::notRecentlyHeard({ .hours = 8 })); }
+            );
+
+            lastHeardMenu->addAction(
+                filtersMenuTr("More than an hour ago"),
+                [setFilter]() { setFilter(
+                               TrackCriteriumFactory::notRecentlyHeard({ .hours = 1 })); }
+            );
+
+            lastHeardMenu->addSeparator();
+
+            lastHeardMenu->addAction(
+                filtersMenuTr("Never"),
+                [setFilter]() { setFilter(TrackCriteriumFactory::neverHeard()); }
+            );
+
+            lastHeardMenu->addAction(
+                filtersMenuTr("At least once"),
+                [setFilter]() { setFilter(TrackCriteriumFactory::heardAtLeastOnce()); }
+            );
+
+
+            // Category: Metadata
+            QMenu* metadataMenu = menu.addMenu(filtersMenuTr("Metadata"));
+
+            metadataMenu->addAction(
+                filtersMenuTr("With title"),
+                [setFilter]() { setFilter(TrackCriteriumFactory::withTitle()); }
+            );
+
+            metadataMenu->addAction(
+                filtersMenuTr("With artist"),
+                [setFilter]() { setFilter(TrackCriteriumFactory::withArtist()); }
+            );
+
+            metadataMenu->addAction(
+                filtersMenuTr("With album"),
+                [setFilter]() { setFilter(TrackCriteriumFactory::withAlbum()); }
+            );
+
+            metadataMenu->addSeparator();
+
+            metadataMenu->addAction(
+                filtersMenuTr("Without title"),
+                [setFilter]() { setFilter(TrackCriteriumFactory::withoutTitle()); }
+            );
+
+            metadataMenu->addAction(
+                filtersMenuTr("Without artist"),
+                [setFilter]() { setFilter(TrackCriteriumFactory::withoutArtist()); }
+            );
+
+            metadataMenu->addAction(
+                filtersMenuTr("Without album"),
+                [setFilter]() { setFilter(TrackCriteriumFactory::withoutAlbum()); }
+            );
+
+            // Category: Status
+            QMenu* statusMenu = menu.addMenu(filtersMenuTr("Status"));
+
+            statusMenu->addAction(
+                filtersMenuTr("In queue"),
+                [setFilter]() { setFilter(TrackCriteriumFactory::inTheQueue()); }
+            );
+
+            statusMenu->addAction(
+                filtersMenuTr("Not in queue"),
+                [setFilter]() { setFilter(TrackCriteriumFactory::notInTheQueue()); }
+            );
+
+            statusMenu->addSeparator();
+
+            statusMenu->addAction(
+                filtersMenuTr("Available"),
+                [setFilter]() { setFilter(TrackCriteriumFactory::available()); }
+            );
+
+            statusMenu->addAction(
+                filtersMenuTr("Unavailable"),
+                [setFilter]() { setFilter(TrackCriteriumFactory::unavailable()); }
+            );
+
+            menu.exec(globalPopupPosition);
+        }
     }
 
     // =============================================================== //
@@ -935,41 +1149,43 @@ namespace PMP
 
     FilterLineWidget::FilterLineWidget()
     {
-        init(); // default initialization with picker
+        init(); // default initialization to empty filter
     }
 
     FilterLineWidget::FilterLineWidget(std::unique_ptr<TrackCriterium> criterium)
     {
-        init(); // default initialization with picker
+        init(); // default initialization to empty filter
 
-        switchToLabel(_filterPicker, std::move(criterium));
+        switchToLabel(_emptyFilterLabel, std::move(criterium));
     }
 
     FilterLineWidget::FilterLineWidget(FilterEditorWidget* editor)
     {
-        init(); // default initialization with picker
+        init(); // default initialization to empty filter
 
-        switchToEditor(_filterPicker, editor);
+        switchToEditor(_emptyFilterLabel, editor);
     }
 
     void FilterLineWidget::init()
     {
+        _emptyFilterLabel = new ClickableLabel();
         _labelWidget = nullptr;
-        _filterPicker = new FilterPickerWidget(PredefinedTrackCriterium::AllTracks,
-                                               tr("(empty)"));
         _editorWidget = nullptr;
         _editButton = new QPushButton();
         _doneButton = new QPushButton();
         _deleteButton = new QPushButton();
         _resetButton = new QPushButton();
+        _isEmpty = true;
 
         QHBoxLayout* layout = new QHBoxLayout(this);
         layout->setContentsMargins(0, 0, 0, 0);
-        layout->addWidget(_filterPicker, 1);
+        layout->addWidget(_emptyFilterLabel, 1);
         layout->addWidget(_editButton, 0);
         layout->addWidget(_doneButton, 0);
         layout->addWidget(_deleteButton, 0);
         layout->addWidget(_resetButton, 0);
+
+        _emptyFilterLabel->setText(tr("(empty)"));
 
         _editButton->setIcon(
             QIcon::fromTheme("document-edit",
@@ -987,12 +1203,12 @@ namespace PMP
         _resetButton->setIcon(style()->standardIcon(QStyle::SP_LineEditClearButton));
         _resetButton->setToolTip(tr("Clear filter"));
 
-        _editButton->setEnabled(false);
+        _editButton->setVisible(false);
         _doneButton->setVisible(false);
 
         connect(
-            _filterPicker, &FilterPickerWidget::criteriumChanged,
-            this, &FilterLineWidget::onPickerCriteriumChanged
+            _emptyFilterLabel, &ClickableLabel::clicked,
+            this, &FilterLineWidget::onEmptyLabelClicked
         );
 
         connect(
@@ -1024,60 +1240,76 @@ namespace PMP
         if (_editorWidget)
             return _editorWidget->createCriterium();
 
-        return _filterPicker->createCriterium();
+        Q_ASSERT_X(_isEmpty,
+                   "FilterLineWidget::createCriterium",
+                   "should be empty at his point");
+
+        return ConstantTrackCriterium::noTracksMatch();
     }
 
-
-    void FilterLineWidget::onPickerCriteriumChanged()
+    void FilterLineWidget::onEmptyLabelClicked(QPoint position)
     {
-        if (_labelWidget || _editorWidget)
-            return;
+        QPoint globalPosition = _emptyFilterLabel->mapToGlobal(position);
 
-        auto criterium = _filterPicker->createCriterium();
-        bool isEditable = FilterEditorFactory::isEditable(*criterium);
-        _editButton->setEnabled(isEditable);
+        displayFiltersPopupMenu(
+            this,
+            globalPosition,
+            [this](auto criterium)
+            {
+                switchToLabel(_emptyFilterLabel, std::move(criterium));
 
-        Q_EMIT criteriumChanged();
+                Q_EMIT criteriumChanged();
+            }
+        );
     }
 
     void FilterLineWidget::onEditClicked()
     {
-        if (_labelWidget)
-        {
-            switchLabelToEditor();
-        }
-        else
-        {
-            switchPickerToEditor();
-        }
+        Q_ASSERT_X(_labelWidget != nullptr,
+                   "FilterLineWidget::onEditClicked",
+                   "label widget must be present");
+
+        switchLabelToEditor();
     }
 
     void FilterLineWidget::onResetClicked()
     {
+        if (_isEmpty)
+            return;
+
         if (_labelWidget)
         {
-            layout()->replaceWidget(_labelWidget, _filterPicker);
-            _labelWidget->setVisible(false);
+            switchToEmpty(_labelWidget);
+
             _labelWidget->deleteLater();
             _labelWidget = nullptr;
         }
-
-        if (_editorWidget)
+        else if (_editorWidget)
         {
-            layout()->replaceWidget(_editorWidget, _filterPicker);
-            _editorWidget->setVisible(false);
+            switchToEmpty(_editorWidget);
+
             _editorWidget->deleteLater();
             _editorWidget = nullptr;
         }
-
-        _filterPicker->clearCriterium();
-        _filterPicker->setVisible(true);
-
-        _editButton->setVisible(true);
-        _editButton->setEnabled(false);
-        _doneButton->setVisible(false);
+        else
+        {
+            Q_UNREACHABLE();
+        }
 
         Q_EMIT criteriumChanged();
+    }
+
+    void FilterLineWidget::switchToEmpty(QWidget* widgetToReplace)
+    {
+        layout()->replaceWidget(widgetToReplace, _emptyFilterLabel);
+        widgetToReplace->setVisible(false);
+
+        _isEmpty = true;
+
+        _emptyFilterLabel->setVisible(true);
+        _editButton->setVisible(false);
+        _doneButton->setVisible(false);
+        _resetButton->setEnabled(false);
     }
 
     void FilterLineWidget::switchEditorToLabel()
@@ -1114,9 +1346,11 @@ namespace PMP
         layout()->replaceWidget(widgetToReplace, _labelWidget);
         widgetToReplace->setVisible(false);
 
-        _editButton->setEnabled(isEditable);
-        _editButton->setVisible(true);
+        _isEmpty = false;
+
+        _editButton->setVisible(isEditable);
         _doneButton->setVisible(false);
+        _resetButton->setEnabled(true);
     }
 
     void FilterLineWidget::switchLabelToEditor()
@@ -1131,17 +1365,6 @@ namespace PMP
 
         _labelWidget->deleteLater();
         _labelWidget = nullptr;
-    }
-
-    void FilterLineWidget::switchPickerToEditor()
-    {
-        Q_ASSERT_X(_labelWidget == nullptr,
-                   "FilterLineWidget::switchPickerToEditor",
-                   "label widget present!");
-
-        auto criterium = _filterPicker->createCriterium();
-
-        switchToEditor(_filterPicker, *criterium);
     }
 
     void FilterLineWidget::switchToEditor(QWidget* widgetToReplace,
@@ -1172,9 +1395,11 @@ namespace PMP
         layout()->replaceWidget(widgetToReplace, _editorWidget);
         widgetToReplace->setVisible(false);
 
-        _editButton->setEnabled(false);
+        _isEmpty = false;
+
         _editButton->setVisible(false);
         _doneButton->setVisible(true);
+        _resetButton->setEnabled(true);
     }
 
     // =============================================================== //
@@ -1205,6 +1430,9 @@ namespace PMP
 
         for (auto const* filterLine : _filters)
         {
+            if (filterLine->isEmpty())
+                continue; // skip empty filter
+
             compositeCriterium->add(filterLine->createCriterium());
         }
 
@@ -1213,196 +1441,12 @@ namespace PMP
 
     void FiltersListWidget::showAddMenu()
     {
-        QMenu menu(this);
-
-        // Category: Score
-        QMenu* scoreMenu = menu.addMenu(tr("Score"));
-
-        scoreMenu->addAction(
-            tr("Less than 30"),
-            [this]() { addFilterLine(TrackCriteriumFactory::scoreLessThanXPercent(30)); }
-        );
-
-        scoreMenu->addAction(
-            tr("Less than 50"),
-            [this]() { addFilterLine(TrackCriteriumFactory::scoreLessThanXPercent(50)); }
-        );
-
-        scoreMenu->addAction(
-            tr("At least 80"),
-            [this]() { addFilterLine(TrackCriteriumFactory::scoreAtLeastXPercent(80)); }
-        );
-
-        scoreMenu->addAction(
-            tr("At least 85"),
-            [this]() { addFilterLine(TrackCriteriumFactory::scoreAtLeastXPercent(85)); }
-        );
-
-        scoreMenu->addAction(
-            tr("At least 90"),
-            [this]() { addFilterLine(TrackCriteriumFactory::scoreAtLeastXPercent(90)); }
-        );
-
-        scoreMenu->addSeparator();
-
-        scoreMenu->addAction(
-            tr("Has score"),
-            [this]() { addFilterLine(TrackCriteriumFactory::scoreMustBePresent()); }
-        );
-
-        scoreMenu->addAction(
-            tr("No score"),
-            [this]() { addFilterLine(TrackCriteriumFactory::scoreMustBeAbsent()); }
-        );
-
-        // Category: Length
-        QMenu* lengthMenu = menu.addMenu(tr("Length"));
-
-        lengthMenu->addAction(
-            tr("Less than 3 minutes"),
-            [this]() { addFilterLine(TrackCriteriumFactory::lengthLessThanXMinutes(3)); }
-        );
-
-        lengthMenu->addAction(
-            tr("At least 3 minutes"),
-            [this]() { addFilterLine(TrackCriteriumFactory::lengthAtLeastXMinutes(3)); }
-        );
-
-        lengthMenu->addAction(
-            tr("Less than 4 minutes"),
-            [this]() { addFilterLine(TrackCriteriumFactory::lengthLessThanXMinutes(4)); }
-        );
-
-        lengthMenu->addAction(
-            tr("At least 4 minutes"),
-            [this]() { addFilterLine(TrackCriteriumFactory::lengthAtLeastXMinutes(4)); }
-        );
-
-        lengthMenu->addAction(
-            tr("Less than 5 minutes"),
-            [this]() { addFilterLine(TrackCriteriumFactory::lengthLessThanXMinutes(5)); }
-        );
-
-        lengthMenu->addAction(
-            tr("At least 5 minutes"),
-            [this]() { addFilterLine(TrackCriteriumFactory::lengthAtLeastXMinutes(5)); }
-        );
-
-        // Category: last heard
-        QMenu* lastHeardMenu = menu.addMenu(tr("Last heard"));
-
-        lastHeardMenu->addAction(
-            tr("More than 2 years ago"),
-            [this]() { addFilterLine(
-                           TrackCriteriumFactory::notRecentlyHeard({ .years = 2 })); }
-        );
-
-        lastHeardMenu->addAction(
-            tr("More than a year ago"),
-            [this]() { addFilterLine(
-                           TrackCriteriumFactory::notRecentlyHeard({ .years = 1 })); }
-        );
-
-        lastHeardMenu->addAction(
-            tr("More than 90 days ago"),
-            [this]() { addFilterLine(
-                           TrackCriteriumFactory::notRecentlyHeard({ .days = 90 })); }
-        );
-
-        lastHeardMenu->addAction(
-            tr("More than 7 days ago"),
-            [this]() { addFilterLine(
-                           TrackCriteriumFactory::notRecentlyHeard({ .days = 7 })); }
-        );
-
-        lastHeardMenu->addAction(
-            tr("More than 8 hours ago"),
-            [this]() { addFilterLine(
-                           TrackCriteriumFactory::notRecentlyHeard({ .hours = 8 })); }
-        );
-
-        lastHeardMenu->addAction(
-            tr("More than an hour ago"),
-            [this]() { addFilterLine(
-                           TrackCriteriumFactory::notRecentlyHeard({ .hours = 1 })); }
-        );
-
-        lastHeardMenu->addSeparator();
-
-        lastHeardMenu->addAction(
-            tr("Never"),
-            [this]() { addFilterLine(TrackCriteriumFactory::neverHeard()); }
-        );
-
-        lastHeardMenu->addAction(
-            tr("At least once"),
-            [this]() { addFilterLine(TrackCriteriumFactory::heardAtLeastOnce()); }
-        );
-
-
-        // Category: Metadata
-        QMenu* metadataMenu = menu.addMenu(tr("Metadata"));
-
-        metadataMenu->addAction(
-            tr("With title"),
-            [this]() { addFilterLine(TrackCriteriumFactory::withTitle()); }
-        );
-
-        metadataMenu->addAction(
-            tr("With artist"),
-            [this]() { addFilterLine(TrackCriteriumFactory::withArtist()); }
-        );
-
-        metadataMenu->addAction(
-            tr("With album"),
-            [this]() { addFilterLine(TrackCriteriumFactory::withAlbum()); }
-        );
-
-        metadataMenu->addSeparator();
-
-        metadataMenu->addAction(
-            tr("Without title"),
-            [this]() { addFilterLine(TrackCriteriumFactory::withoutTitle()); }
-        );
-
-        metadataMenu->addAction(
-            tr("Without artist"),
-            [this]() { addFilterLine(TrackCriteriumFactory::withoutArtist()); }
-        );
-
-        metadataMenu->addAction(
-            tr("Without album"),
-            [this]() { addFilterLine(TrackCriteriumFactory::withoutAlbum()); }
-        );
-
-        // Category: Status
-        QMenu* statusMenu = menu.addMenu(tr("Status"));
-
-        statusMenu->addAction(
-            tr("In queue"),
-            [this]() { addFilterLine(TrackCriteriumFactory::inTheQueue()); }
-        );
-
-        statusMenu->addAction(
-            tr("Not in queue"),
-            [this]() { addFilterLine(TrackCriteriumFactory::notInTheQueue()); }
-        );
-
-        statusMenu->addSeparator();
-
-        statusMenu->addAction(
-            tr("Available"),
-            [this]() { addFilterLine(TrackCriteriumFactory::available()); }
-        );
-
-        statusMenu->addAction(
-            tr("Unavailable"),
-            [this]() { addFilterLine(TrackCriteriumFactory::unavailable()); }
-        );
-
         // Show menu below the button
         QPoint pos = _addMenuButton->mapToGlobal(QPoint(0, _addMenuButton->height()));
-        menu.exec(pos);
+
+        displayFiltersPopupMenu(
+            this, pos, [this](auto criterium) { addFilterLine(std::move(criterium)); }
+        );
     }
 
     void FiltersListWidget::addFilterLine(std::unique_ptr<TrackCriterium> criterium)

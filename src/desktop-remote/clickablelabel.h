@@ -39,7 +39,7 @@ namespace PMP
 
     Q_SIGNALS:
         void clickableChanged();
-        void clicked();
+        void clicked(QPoint position);
 
     protected:
         void mousePressEvent(QMouseEvent* event) override;

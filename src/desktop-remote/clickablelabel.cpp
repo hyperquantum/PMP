@@ -20,6 +20,7 @@
 #include "clickablelabel.h"
 
 #include <QLayout>
+#include <QMouseEvent>
 
 namespace PMP
 {
@@ -67,6 +68,6 @@ namespace PMP
         if (!_clickable)
             return;
 
-        Q_EMIT clicked();
+        Q_EMIT clicked(event->pos());
     }
 }
