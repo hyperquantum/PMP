@@ -75,28 +75,6 @@ namespace PMP
         ClickableLabel* _label;
     };
 
-    class FilterPickerWidget : public QWidget
-    {
-        Q_OBJECT
-    public:
-        FilterPickerWidget(PredefinedTrackCriterium criteriumForEmpty,
-                           QString captionForEmpty);
-
-        void clearCriterium();
-        std::unique_ptr<TrackCriterium> createCriterium() const;
-
-    Q_SIGNALS:
-        void criteriumChanged();
-
-    private:
-        void fillTrackCriteriaComboBox(QComboBox* comboBox,
-                                       PredefinedTrackCriterium criteriumForEmpty,
-                                       QString captionForEmpty);
-
-        QComboBox* _comboBox;
-        PredefinedTrackCriterium _predefinedCriterium;
-    };
-
     class FilterEditorWidget : public QWidget
     {
         Q_OBJECT
