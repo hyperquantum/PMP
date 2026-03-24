@@ -161,6 +161,7 @@ namespace PMP
             criterium->equals(*ConstantTrackCriterium::noTracksMatch());
 
         _colorSwitcher->setVisible(!nothingToHighlight);
+        _ui->highlightTracksResetButton->setEnabled(!nothingToHighlight);
 
         _collectionSourceModel->setHighlightCriterium(*criterium);
     }
@@ -314,6 +315,7 @@ namespace PMP
         auto* resetButton = _ui->highlightTracksResetButton;
         resetButton->setIcon(style()->standardIcon(QStyle::SP_LineEditClearButton));
         resetButton->setToolTip(tr("Reset highlighting"));
+        resetButton->setEnabled(false);
 
         connect(
             resetButton, &QPushButton::clicked,
