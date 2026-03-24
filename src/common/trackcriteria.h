@@ -29,52 +29,7 @@
 
 namespace PMP
 {
-    enum class PredefinedTrackCriterium
-    {
-        AllTracks = 0,
-        NoTracks,
-        NeverHeard,
-        NotHeardInLast5Years,
-        NotHeardInLast3Years,
-        NotHeardInLast2Years,
-        NotHeardInLastYear,
-        NotHeardInLast180Days,
-        NotHeardInLast90Days,
-        NotHeardInLast30Days,
-        NotHeardInLast10Days,
-        HeardAtLeastOnce,
-        WithoutScore,
-        WithScore,
-        ScoreLessThan30,
-        ScoreLessThan50,
-        ScoreAtLeast80,
-        ScoreAtLeast85,
-        ScoreAtLeast90,
-        ScoreAtLeast95,
-        LengthLessThanOneMinute,
-        LengthAtLeastOneMinute,
-        LengthLessThanTwoMinutes,
-        LengthAtLeastTwoMinutes,
-        LengthLessThanThreeMinutes,
-        LengthAtLeastThreeMinutes,
-        LengthLessThanFourMinutes,
-        LengthAtLeastFourMinutes,
-        LengthLessThanFiveMinutes,
-        LengthAtLeastFiveMinutes,
-        NotInTheQueue,
-        InTheQueue,
-        WithoutTitle,
-        WithoutArtist,
-        WithoutAlbum,
-        NoLongerAvailable,
-    };
-
     class TrackCriterium;
-
-    std::unique_ptr<TrackCriterium> convertToTrackCriterium(PredefinedTrackCriterium);
-    std::unique_ptr<TrackCriterium> convertToTrackCriterium(
-                                                const QList<PredefinedTrackCriterium>&);
-
     class TrackCriteriumVisitor;
 
     class TrackCriterium
@@ -789,7 +744,6 @@ namespace PMP
     };
 }
 
-Q_DECLARE_METATYPE(PMP::PredefinedTrackCriterium)
 Q_DECLARE_METATYPE(PMP::ComparisonOperator)
 
 #endif
