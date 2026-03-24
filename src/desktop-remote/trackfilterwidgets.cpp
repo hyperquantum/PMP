@@ -1197,9 +1197,11 @@ namespace PMP
                              style()->standardIcon(QStyle::SP_DialogApplyButton)));
         _doneButton->setToolTip(tr("Done editing"));
 
+        _deleteVisible = true;
         _deleteButton->setIcon(style()->standardIcon(QStyle::SP_DialogDiscardButton));
         _deleteButton->setToolTip(tr("Remove filter"));
 
+        _resetVisible = true;
         _resetButton->setIcon(style()->standardIcon(QStyle::SP_LineEditClearButton));
         _resetButton->setToolTip(tr("Clear filter"));
 
@@ -1247,6 +1249,24 @@ namespace PMP
         return ConstantTrackCriterium::noTracksMatch();
     }
 
+    void FilterLineWidget::setDeleteButtonVisible(bool visible)
+    {
+        if (_deleteVisible == visible)
+            return;
+
+        _deleteVisible = visible;
+        _deleteButton->setVisible(_deleteVisible);
+    }
+
+    void FilterLineWidget::setResetButtonVisible(bool visible)
+    {
+        if (_resetVisible == visible)
+            return;
+
+        _resetVisible = visible;
+        _resetButton->setVisible(_resetVisible);
+    }
+
     void FilterLineWidget::onEmptyLabelClicked(QPoint position)
     {
         QPoint globalPosition = _emptyFilterLabel->mapToGlobal(position);
@@ -1273,6 +1293,11 @@ namespace PMP
     }
 
     void FilterLineWidget::onResetClicked()
+    {
+        clearCriterium();
+    }
+
+    void FilterLineWidget::clearCriterium()
     {
         if (_isEmpty)
             return;

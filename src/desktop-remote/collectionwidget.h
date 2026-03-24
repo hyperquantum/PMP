@@ -41,7 +41,7 @@ namespace PMP
 {
     class ColorSwitcher;
     class FilteredCollectionTableModel;
-    class FilterPickerWidget;
+    class FilterLineWidget;
     class FiltersListWidget;
     class SearchData;
     class SortedCollectionTableModel;
@@ -78,7 +78,7 @@ namespace PMP
         Ui::CollectionWidget* _ui;
         WaitingSpinnerWidget* _spinner { nullptr };
         FiltersListWidget* _filtersListWidget { nullptr };
-        FilterPickerWidget* _highlightingCriteriumPicker { nullptr };
+        FilterLineWidget* _highlightingCriteriumWidget { nullptr };
         ColorSwitcher* _colorSwitcher;
         Client::ServerInterface* _serverInterface;
         UserForStatisticsDisplay* _userStatisticsDisplay;

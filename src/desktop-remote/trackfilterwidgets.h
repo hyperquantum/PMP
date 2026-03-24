@@ -226,8 +226,13 @@ namespace PMP
         FilterLineWidget(std::unique_ptr<TrackCriterium> criterium);
         FilterLineWidget(FilterEditorWidget* editor);
 
+        void clearCriterium();
         bool isEmpty() const { return _isEmpty; }
+
         std::unique_ptr<TrackCriterium> createCriterium() const;
+
+        void setDeleteButtonVisible(bool visible);
+        void setResetButtonVisible(bool visible);
 
     Q_SIGNALS:
         void criteriumChanged();
@@ -256,6 +261,8 @@ namespace PMP
         QPushButton* _deleteButton;
         QPushButton* _resetButton;
         bool _isEmpty;
+        bool _deleteVisible;
+        bool _resetVisible;
     };
 
     class FiltersListWidget : public QWidget

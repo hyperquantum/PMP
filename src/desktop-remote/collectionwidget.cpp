@@ -155,7 +155,7 @@ namespace PMP
 
     void CollectionWidget::onHighlightCriteriumChanged()
     {
-        auto criterium = _highlightingCriteriumPicker->createCriterium();
+        auto criterium = _highlightingCriteriumWidget->createCriterium();
 
         bool nothingToHighlight =
             criterium->equals(*ConstantTrackCriterium::noTracksMatch());
@@ -278,13 +278,14 @@ namespace PMP
 
     void CollectionWidget::initTrackHighlightingWidgets()
     {
-        _highlightingCriteriumPicker =
-            new FilterPickerWidget(PredefinedTrackCriterium::NoTracks, tr("(none)"));
+        _highlightingCriteriumWidget = new FilterLineWidget();
+        _highlightingCriteriumWidget->setDeleteButtonVisible(false);
+        _highlightingCriteriumWidget->setResetButtonVisible(false);
 
         {
             auto layoutItem =
                 this->layout()->replaceWidget(_ui->highlightTracksComboBox,
-                                              _highlightingCriteriumPicker);
+                                              _highlightingCriteriumWidget);
 
             delete layoutItem;
             /* we cannot delete the placeholder because of retranslateUi() so we hide it*/
@@ -292,7 +293,7 @@ namespace PMP
         }
 
         connect(
-            _highlightingCriteriumPicker, &FilterPickerWidget::criteriumChanged,
+            _highlightingCriteriumWidget, &FilterLineWidget::criteriumChanged,
             this, [this]() { onHighlightCriteriumChanged(); }
         );
 
@@ -316,7 +317,7 @@ namespace PMP
 
         connect(
             resetButton, &QPushButton::clicked,
-            this, [this]() { _highlightingCriteriumPicker->clearCriterium(); }
+            this, [this]() { _highlightingCriteriumWidget->clearCriterium(); }
         );
 
         updateColors(/* force: */ true);
