@@ -289,7 +289,7 @@ namespace PMP
         if (criterium.availability())
             _caption = tr("available");
         else
-            _caption = tr("no longer available");
+            _caption = tr("unavailable");
     }
 
     void FilterLabelWidget::CriteriumCaptionGenerator::visit(
@@ -299,21 +299,21 @@ namespace PMP
         {
         case TrackMetaDataKind::Title:
             if (criterium.presence())
-                _caption = tr("with title");
+                _caption = tr("has title");
             else
-                _caption = tr("without title");
+                _caption = tr("no title");
             break;
         case TrackMetaDataKind::Artist:
             if (criterium.presence())
-                _caption = tr("with artist");
+                _caption = tr("has artist");
             else
-                _caption = tr("without artist");
+                _caption = tr("no artist");
             break;
         case TrackMetaDataKind::Album:
             if (criterium.presence())
-                _caption = tr("with album");
+                _caption = tr("has album");
             else
-                _caption = tr("without album");
+                _caption = tr("no album");
             break;
         }
     }
@@ -568,34 +568,34 @@ namespace PMP
             QMenu* metadataMenu = menu.addMenu(filtersMenuTr("Metadata"));
 
             metadataMenu->addAction(
-                filtersMenuTr("With title"),
+                filtersMenuTr("Has title"),
                 [setFilter]() { setFilter(TrackCriteriumFactory::withTitle()); }
             );
 
             metadataMenu->addAction(
-                filtersMenuTr("With artist"),
+                filtersMenuTr("Has artist"),
                 [setFilter]() { setFilter(TrackCriteriumFactory::withArtist()); }
             );
 
             metadataMenu->addAction(
-                filtersMenuTr("With album"),
+                filtersMenuTr("Has album"),
                 [setFilter]() { setFilter(TrackCriteriumFactory::withAlbum()); }
             );
 
             metadataMenu->addSeparator();
 
             metadataMenu->addAction(
-                filtersMenuTr("Without title"),
+                filtersMenuTr("No title"),
                 [setFilter]() { setFilter(TrackCriteriumFactory::withoutTitle()); }
             );
 
             metadataMenu->addAction(
-                filtersMenuTr("Without artist"),
+                filtersMenuTr("No artist"),
                 [setFilter]() { setFilter(TrackCriteriumFactory::withoutArtist()); }
             );
 
             metadataMenu->addAction(
-                filtersMenuTr("Without album"),
+                filtersMenuTr("No album"),
                 [setFilter]() { setFilter(TrackCriteriumFactory::withoutAlbum()); }
             );
 
