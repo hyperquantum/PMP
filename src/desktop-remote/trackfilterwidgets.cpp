@@ -414,7 +414,8 @@ namespace PMP
         }
 
         void displayFiltersPopupMenu(QWidget* parent, QPoint globalPopupPosition,
-                        std::function<void (std::unique_ptr<TrackCriterium>)> setFilter)
+                        std::function<void (std::unique_ptr<TrackCriterium>)> setFilter,
+                                     Nullable<std::function<void ()>> emptyAction)
         {
             QMenu menu(parent);
 
@@ -555,7 +556,6 @@ namespace PMP
                 [setFilter]() { setFilter(TrackCriteriumFactory::heardAtLeastOnce()); }
             );
 
-
             // Category: Metadata
             QMenu* metadataMenu = menu.addMenu(filtersMenuTr("Metadata"));
 
@@ -615,6 +615,16 @@ namespace PMP
                 filtersMenuTr("Unavailable"),
                 [setFilter]() { setFilter(TrackCriteriumFactory::unavailable()); }
             );
+
+            // The empty entry
+            if (emptyAction.hasValue())
+            {
+                menu.addSeparator();
+                menu.addAction(
+                    filtersMenuTr("(empty)"),
+                    [emptyAction]() { emptyAction.value()(); }
+                );
+            }
 
             menu.exec(globalPopupPosition);
         }
@@ -1100,6 +1110,7 @@ namespace PMP
 
         _editButton->setVisible(false);
         _doneButton->setVisible(false);
+        _resetButton->setEnabled(false);
 
         connect(
             _emptyFilterLabel, &ClickableLabel::clicked,
@@ -1172,7 +1183,8 @@ namespace PMP
                 switchToLabel(_emptyFilterLabel, std::move(criterium));
 
                 Q_EMIT criteriumChanged();
-            }
+            },
+            null /* do not display 'empty' */
         );
     }
 
@@ -1363,7 +1375,10 @@ namespace PMP
         QPoint pos = _addMenuButton->mapToGlobal(QPoint(0, _addMenuButton->height()));
 
         displayFiltersPopupMenu(
-            this, pos, [this](auto criterium) { addFilterLine(std::move(criterium)); }
+            this,
+            pos,
+            [this](auto criterium) { addFilterLine(std::move(criterium)); },
+            { [this]() { addFilterLine(new FilterLineWidget()); } } /* add empty filter */
         );
     }
 
