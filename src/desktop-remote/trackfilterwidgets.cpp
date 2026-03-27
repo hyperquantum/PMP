@@ -123,6 +123,14 @@ namespace PMP
         {
             _caption = tr("length %1 %2 second(s)").arg(opStr).arg(seconds);
         }
+        else if (hours == 0)
+        {
+            _caption =
+                tr("length %1 %2:%3")
+                    .arg(opStr)
+                    .arg(minutes, 2, 10, QChar('0'))
+                    .arg(seconds, 2, 10, QChar('0'));
+        }
         else
         {
             _caption =
