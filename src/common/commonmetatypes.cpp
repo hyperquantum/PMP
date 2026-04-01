@@ -45,11 +45,11 @@ namespace PMP
         CommonMetatypesInit()
         {
             qRegisterMetaType<PMP::AudioData>();
+            qRegisterMetaType<PMP::ComparisonOperator>();
             qRegisterMetaType<PMP::FileHash>();
             qRegisterMetaType<PMP::PlayerHistoryTrackInfo>();
             qRegisterMetaType<PMP::PlayerMode>();
             qRegisterMetaType<PMP::PlayerState>();
-            qRegisterMetaType<PMP::PredefinedTrackCriterium>();
             qRegisterMetaType<PMP::QueueEntryType>();
             qRegisterMetaType<PMP::QueueIndexType>();
             qRegisterMetaType<PMP::ScrobblerStatus>();

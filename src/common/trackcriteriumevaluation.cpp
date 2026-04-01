@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2025-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -46,6 +46,14 @@ namespace PMP
 
             return s.value().trimmed().isEmpty();
         }
+
+        TriBool stringIsNotEmpty(Nullable<QString> s)
+        {
+            if (s.isNull())
+                return TriBool::unknown;
+
+            return !s.value().trimmed().isEmpty();
+        }
     }
 
     TriBool TrackCriteriumEvaluator::evaluate(const TrackCriterium& criterium,
@@ -79,7 +87,10 @@ namespace PMP
         }
 
         auto op = criterium.comparisonOperator();
-        auto criteriumMs = criterium.lengthMinutes() * 60 * 1000;
+        auto criteriumMs =
+            criterium.hours() * 60 * 60 * 1000
+            + criterium.minutes() * 60 * 1000
+            + criterium.seconds() * 1000;
 
         _result = evaluateComparison(trackLengthMs.value(), op, criteriumMs);
     }
@@ -150,7 +161,8 @@ namespace PMP
         auto startOfDuration =
             _context.currentDateTimeUtc()
                 .addYears(-duration.years)
-                .addDays(-duration.days);
+                .addDays(-duration.days)
+                .addSecs(-duration.hours * 60 * 60);
 
         _result = criterium.isInverted()
                     ? trackLastHeard.value() <= startOfDuration
@@ -172,15 +184,24 @@ namespace PMP
         switch (criterium.metaDataKind())
         {
         case TrackMetaDataKind::Title:
-            _result = stringIsEmpty(_context.title());
+            _result =
+                criterium.presence()
+                          ? stringIsNotEmpty(_context.title())
+                          : stringIsEmpty(_context.title());
             return;
 
         case TrackMetaDataKind::Artist:
-            _result = stringIsEmpty(_context.artist());
+            _result =
+                criterium.presence()
+                    ? stringIsNotEmpty(_context.artist())
+                    : stringIsEmpty(_context.artist());
             return;
 
         case TrackMetaDataKind::Album:
-            _result = stringIsEmpty(_context.album());
+            _result =
+                criterium.presence()
+                    ? stringIsNotEmpty(_context.album())
+                    : stringIsEmpty(_context.album());
             return;
         }
 

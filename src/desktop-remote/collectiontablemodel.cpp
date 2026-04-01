@@ -934,10 +934,19 @@ namespace PMP
 
     void FilteredCollectionTableModel::setTrackFilters(const TrackCriterium& criterium)
     {
+        qDebug() << "Music collection: got filters changed signal";
+
         bool changed = _filteringTrackJudge.setCriterium(criterium);
 
         if (changed)
+        {
+            qDebug() << "filters were really changed";
             invalidateFilter();
+        }
+        else
+        {
+            qDebug() << "filters did not really change";
+        }
     }
 
     void FilteredCollectionTableModel::sort(int column, Qt::SortOrder order)
