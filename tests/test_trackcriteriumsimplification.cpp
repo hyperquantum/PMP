@@ -106,7 +106,8 @@ void TestTrackCriteriumSimplification::compositeContainingOneNoTracksSimplifiedT
     input->add(createAllTracks());
     input->add(TrackQueuePresenceCriterium::mustBeAbsentInQueue());
     input->add(createNoTracks());
-    input->add<TrackLengthComparisonCriterium>(ComparisonOperator::GreaterThanOrEqual, 3);
+    input->add<TrackLengthComparisonCriterium>(ComparisonOperator::GreaterThanOrEqual,
+                                               0, 3, 0);
 
     auto simplified = TrackCriteriumSimplifier::simplify(*input);
 

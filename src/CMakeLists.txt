@@ -243,6 +243,7 @@ set(PMP_DESKTOP_REMOTE_SOURCES
     desktop-remote/scrobblingauthenticationdialog.cpp
     desktop-remote/searchdata.cpp
     desktop-remote/searchdialog.cpp
+    desktop-remote/trackfilterwidgets.cpp
     desktop-remote/trackinfodialog.cpp
     desktop-remote/trackjudge.cpp
     desktop-remote/trackprogresswidget.cpp
@@ -276,6 +277,7 @@ set(PMP_DESKTOP_REMOTE_HEADERS
     desktop-remote/scrobblingauthenticationdialog.h
     desktop-remote/searchdata.h
     desktop-remote/searchdialog.h
+    desktop-remote/trackfilterwidgets.h
     desktop-remote/trackinfodialog.h
     desktop-remote/trackprogresswidget.h
     desktop-remote/useraccountcreationwidget.h

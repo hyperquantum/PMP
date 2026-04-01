@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -50,6 +50,51 @@ namespace PMP
         QThread::msleep(8);
 
         return result;
+    }
+
+    void Util::normalizeDuration(int& hours, int& minutes, int& seconds)
+    {
+        int extraMinutes = seconds / 60;
+        int normalizedSeconds = seconds % 60;
+
+        seconds = normalizedSeconds;
+        minutes += extraMinutes;
+
+        int extraHours = minutes / 60;
+        int normalizedMinutes = minutes % 60;
+
+        minutes = normalizedMinutes;
+        hours += extraHours;
+    }
+
+    void Util::normalizeLongDuration(int& years, int& days, int& hours)
+    {
+        int extraDays = hours / 24;
+        int normalizedHours = hours % 24;
+
+        hours = normalizedHours;
+        days += extraDays;
+
+        const int daysInFourYears = 3 * 365 + 366;
+
+        int fourYearInstances = days / daysInFourYears;
+        int daysLeft = days % daysInFourYears;
+
+        days = daysLeft;
+        years += 4 * fourYearInstances;
+
+        int extraYears = days / 365;
+        int normalizedDays = days % 365;
+
+        // fix the edge case of 4 * 365
+        if (extraYears == 4)
+        {
+            extraYears = 3;
+            normalizedDays += 365;
+        }
+
+        days = normalizedDays;
+        years += extraYears;
     }
 
     QString Util::secondsToHoursMinuteSecondsText(qint32 totalSeconds)

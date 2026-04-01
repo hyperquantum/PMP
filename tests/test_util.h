@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -28,6 +28,8 @@ class TestUtil : public QObject
 private Q_SLOTS:
     void getCopyrightLine();
     void getRandomSeed();
+    void normalizeDuration();
+    void normalizeLongDuration();
     void secondsToHoursMinuteSecondsText();
     void millisecondsToShortDisplayTimeText();
     void millisecondsToLongDisplayTimeText();

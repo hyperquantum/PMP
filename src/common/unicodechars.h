@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2026, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -49,6 +49,9 @@ namespace PMP
 
         /*! The "LESS-THAN OR EQUAL TO" symbol (U+2264) */
         [[maybe_unused]] constexpr QChar lessThanOrEqual = QChar(0x2264);
+
+        /*! The inequality operator (U+2260) */
+        [[maybe_unused]] constexpr QChar notEqual = QChar(0x2260);
 
         /*! Pause symbol (U+23F8) */
         [[maybe_unused]] constexpr QChar pauseSymbol = QChar(0x23F8);

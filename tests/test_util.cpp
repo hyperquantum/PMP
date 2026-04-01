@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -225,6 +225,160 @@ void TestUtil::getRandomSeed()
     QVERIFY(seed2 != seed3);
     QVERIFY(seed2 != seed4);
     QVERIFY(seed3 != seed4);
+}
+
+void TestUtil::normalizeDuration()
+{
+    int hours, minutes, seconds;
+
+    {
+        hours = 0; minutes = 0; seconds = 0;
+        Util::normalizeDuration(hours, minutes, seconds);
+
+        QCOMPARE(hours, 0);
+        QCOMPARE(minutes, 0);
+        QCOMPARE(seconds, 0);
+    }
+
+    {
+        hours = 1; minutes = 30; seconds = 8;
+        Util::normalizeDuration(hours, minutes, seconds);
+
+        QCOMPARE(hours, 1);
+        QCOMPARE(minutes, 30);
+        QCOMPARE(seconds, 8);
+    }
+
+    {
+        hours = 1; minutes = 30; seconds = 60;
+        Util::normalizeDuration(hours, minutes, seconds);
+
+        QCOMPARE(hours, 1);
+        QCOMPARE(minutes, 31);
+        QCOMPARE(seconds, 0);
+    }
+
+    {
+        hours = 1; minutes = 70; seconds = 5;
+        Util::normalizeDuration(hours, minutes, seconds);
+
+        QCOMPARE(hours, 2);
+        QCOMPARE(minutes, 10);
+        QCOMPARE(seconds, 5);
+    }
+
+    {
+        hours = 1; minutes = 59; seconds = 137;
+        Util::normalizeDuration(hours, minutes, seconds);
+
+        QCOMPARE(hours, 2);
+        QCOMPARE(minutes, 1);
+        QCOMPARE(seconds, 17);
+    }
+}
+
+void TestUtil::normalizeLongDuration()
+{
+    int years, days, hours;
+
+    {
+        years = 0; days = 0; hours = 0;
+        Util::normalizeLongDuration(years, days, hours);
+
+        QCOMPARE(years, 0);
+        QCOMPARE(days, 0);
+        QCOMPARE(hours, 0);
+    }
+
+    {
+        years = 0; days = 0; hours = 4;
+        Util::normalizeLongDuration(years, days, hours);
+
+        QCOMPARE(years, 0);
+        QCOMPARE(days, 0);
+        QCOMPARE(hours, 4);
+    }
+
+    {
+        years = 0; days = 1; hours = 30;
+        Util::normalizeLongDuration(years, days, hours);
+
+        QCOMPARE(years, 0);
+        QCOMPARE(days, 2);
+        QCOMPARE(hours, 6);
+    }
+
+    {
+        years = 0; days = 0; hours = 365 * 24 + 15;
+        Util::normalizeLongDuration(years, days, hours);
+
+        QCOMPARE(years, 1);
+        QCOMPARE(days, 0);
+        QCOMPARE(hours, 15);
+    }
+
+    {
+        years = 3; days = 0; hours = 0;
+        Util::normalizeLongDuration(years, days, hours);
+
+        QCOMPARE(years, 3);
+        QCOMPARE(days, 0);
+        QCOMPARE(hours, 0);
+    }
+
+    {
+        years = 0; days = 90; hours = 0;
+        Util::normalizeLongDuration(years, days, hours);
+
+        QCOMPARE(years, 0);
+        QCOMPARE(days, 90);
+        QCOMPARE(hours, 0);
+    }
+
+    {
+        years = 1; days = 7; hours = 0;
+        Util::normalizeLongDuration(years, days, hours);
+
+        QCOMPARE(years, 1);
+        QCOMPARE(days, 7);
+        QCOMPARE(hours, 0);
+    }
+
+    {
+        years = 2; days = 370; hours = 0;
+        Util::normalizeLongDuration(years, days, hours);
+
+        QCOMPARE(years, 3);
+        QCOMPARE(days, 5);
+        QCOMPARE(hours, 0);
+    }
+
+    {
+        years = 0; days = 999; hours = 0;
+        Util::normalizeLongDuration(years, days, hours);
+
+        QCOMPARE(years, 2);
+        QCOMPARE(days, 269);
+        QCOMPARE(hours, 0);
+    }
+
+    {
+        years = 0; days = 365 + 365 + 365 + 365; hours = 0;
+        Util::normalizeLongDuration(years, days, hours);
+
+        QCOMPARE(years, 3);
+        QCOMPARE(days, 365);
+        QCOMPARE(hours, 0);
+    }
+
+    {
+        years = 0; days = 365 + 365 + 365 + 366; hours = 0;
+        Util::normalizeLongDuration(years, days, hours);
+
+        QCOMPARE(years, 4);
+        QCOMPARE(days, 0);
+        QCOMPARE(hours, 0);
+    }
 }
 
 void TestUtil::generateZeroedMemory()
