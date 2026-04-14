@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -54,9 +54,6 @@ namespace PMP
                                     bool enableExperimentalFileFormats = false);
         static bool isExtensionSupported(QString const& extension,
                                          bool enableExperimentalFileFormats = false);
-
-        static bool preprocessFileForPlayback(QByteArray& fileContents,
-                                              QString extension);
 
         void analyze();
 

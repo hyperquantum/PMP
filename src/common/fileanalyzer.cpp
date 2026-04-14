@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -181,31 +181,6 @@ namespace PMP
 
         /* all (other) recognized extensions are supported */
         return extensionEnum != Extension::None;
-    }
-
-    bool FileAnalyzer::preprocessFileForPlayback(QByteArray& fileContents,
-                                                 QString extension)
-    {
-        /* only need to do something for MP3 files */
-        if (getExtension(extension) != Extension::MP3) return true;
-
-        /* strip the ID3v2 tag because DirectShow chokes on ID3v2.4 */
-
-        TagLib::ByteVector scratch(fileContents.data(), uint(fileContents.length()));
-        TagLib::ByteVectorStream stream(scratch);
-        TagLib::MPEG::File tagFile(&stream, TagLib::ID3v2::FrameFactory::instance());
-        if (!tagFile.isValid())
-        {
-            return false;
-        }
-
-        tagFile.strip(TagLib::MPEG::File::ID3v2); /* strip the ID3v2 */
-        scratch = *stream.data(); /* get the stripped file contents */
-
-        QByteArray strippedData(scratch.data(), int(scratch.size()));
-        fileContents = strippedData;
-
-        return true; /* success */
     }
 
     FileAnalyzer::Extension FileAnalyzer::getExtension(QString extension)
