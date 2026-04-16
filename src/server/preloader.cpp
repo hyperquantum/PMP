@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2016-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -397,12 +397,6 @@ namespace PMP::Server
 
         qDebug() << "Preloader: read" << contents.size() << "bytes from"
                  << originalFilename << "for queue ID" << queueId;
-
-        if (!FileAnalyzer::preprocessFileForPlayback(contents, extension))
-        {
-            qWarning() << "Preloader: failed to preprocess file" << originalFilename;
-            return failure;
-        }
 
         QString tempDir;
         if (QDir::temp().mkpath("PMP-preload-cache"))
