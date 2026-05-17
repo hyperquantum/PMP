@@ -260,7 +260,7 @@ namespace PMP
 
     void CollectionWidget::initTrackFilterWidgets()
     {
-        _filtersListWidget = new FiltersListWidget();
+        _filtersListWidget = new FiltersListWidget(_serverInterface);
 
         auto layoutItem =
             this->layout()->replaceWidget(_ui->filterPlaceholder, _filtersListWidget);
@@ -279,7 +279,7 @@ namespace PMP
 
     void CollectionWidget::initTrackHighlightingWidgets()
     {
-        _highlightingCriteriumWidget = new FilterLineWidget();
+        _highlightingCriteriumWidget = new FilterLineWidget(_serverInterface);
         _highlightingCriteriumWidget->setDeleteButtonVisible(false);
         _highlightingCriteriumWidget->setResetButtonVisible(false);
 
@@ -319,7 +319,7 @@ namespace PMP
 
         connect(
             resetButton, &QPushButton::clicked,
-            this, [this]() { _highlightingCriteriumWidget->clearCriterium(); }
+            this, [this]() { _highlightingCriteriumWidget->clearFilter(); }
         );
 
         updateColors(/* force: */ true);

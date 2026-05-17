@@ -22,13 +22,21 @@
 
 #include "common/trackcriteria.h"
 
+#include <QPointer>
 #include <QWidget>
+
+#include <memory>
 
 QT_FORWARD_DECLARE_CLASS(QComboBox)
 QT_FORWARD_DECLARE_CLASS(QLabel)
 QT_FORWARD_DECLARE_CLASS(QPushButton)
 QT_FORWARD_DECLARE_CLASS(QSpinBox)
 QT_FORWARD_DECLARE_CLASS(QVBoxLayout)
+
+namespace PMP::Client
+{
+    class ServerInterface;
+}
 
 namespace PMP
 {
@@ -147,7 +155,8 @@ namespace PMP
     public:
         static bool isEditable(TrackCriterium const& criterium);
         static FilterEditorWidget* createFromCriterium(QWidget* parent,
-                                                       TrackCriterium const& criterium);
+                                                       TrackCriterium const& criterium,
+                                                Client::ServerInterface* serverInterface);
 
     private:
         class IsEditableVisitor final : public TrackCriteriumVisitor
@@ -174,7 +183,8 @@ namespace PMP
         class EditorWidgetCreationVisitor final : public TrackCriteriumVisitor
         {
         public:
-            explicit EditorWidgetCreationVisitor(QWidget* parent);
+            explicit EditorWidgetCreationVisitor(QWidget* parent,
+                                                Client::ServerInterface* serverInterface);
 
             FilterEditorWidget* editorWidget() const { return _editorWidget; }
 
@@ -192,20 +202,32 @@ namespace PMP
 
         private:
             QWidget* _parent;
+            Client::ServerInterface* _serverInterface;
             FilterEditorWidget* _editorWidget;
         };
     };
 
-    class FilterLineWidget : public QWidget
+    class ModifiableFilter
+    {
+    public:
+        virtual ~ModifiableFilter() = default;
+
+        virtual void clearFilter() = 0;
+        virtual void setFilterToCriterium(std::unique_ptr<TrackCriterium> criterium) = 0;
+        virtual void setFilterToEditor(FilterEditorWidget* editor) = 0;
+    };
+
+    class FilterLineWidget : public QWidget, public ModifiableFilter
     {
         Q_OBJECT
     public:
-        FilterLineWidget();
-        FilterLineWidget(std::unique_ptr<TrackCriterium> criterium);
-        FilterLineWidget(FilterEditorWidget* editor);
+        FilterLineWidget(Client::ServerInterface* serverInterface);
 
-        void clearCriterium();
+        void clearFilter() override;
         bool isEmpty() const { return _isEmpty; }
+
+        void setFilterToCriterium(std::unique_ptr<TrackCriterium> criterium) override;
+        void setFilterToEditor(FilterEditorWidget* editor) override;
 
         std::unique_ptr<TrackCriterium> createCriterium() const;
 
@@ -222,6 +244,19 @@ namespace PMP
         void onResetClicked();
 
     private:
+        class FilterSetter : public ModifiableFilter
+        {
+        public:
+            explicit FilterSetter(FilterLineWidget* parent);
+
+            void clearFilter() override;
+            void setFilterToCriterium(std::unique_ptr<TrackCriterium> criterium) override;
+            void setFilterToEditor(FilterEditorWidget* editor) override;
+
+        private:
+            QPointer<FilterLineWidget> _parent;
+        };
+
         void init();
         void switchToEmpty(QWidget* widgetToReplace);
         void switchEditorToLabel();
@@ -231,6 +266,7 @@ namespace PMP
         void switchToEditor(QWidget* widgetToReplace, TrackCriterium const& criterium);
         void switchToEditor(QWidget* widgetToReplace, FilterEditorWidget* editor);
 
+        Client::ServerInterface* _serverInterface;
         ClickableLabel* _emptyFilterLabel;
         FilterLabelWidget* _labelWidget;
         FilterEditorWidget* _editorWidget;
@@ -247,7 +283,7 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        FiltersListWidget();
+        FiltersListWidget(Client::ServerInterface* serverInterface);
 
         std::unique_ptr<TrackCriterium> createCriterium() const;
 
@@ -258,9 +294,25 @@ namespace PMP
         void showAddMenu();
 
     private:
-        void addFilterLine(std::unique_ptr<TrackCriterium> criterium);
-        void addFilterLine(FilterLineWidget* filterLine);
+        class FilterAdder : public ModifiableFilter
+        {
+        public:
+            explicit FilterAdder(FiltersListWidget* parent);
 
+            void clearFilter() override;
+            void setFilterToCriterium(std::unique_ptr<TrackCriterium> criterium) override;
+            void setFilterToEditor(FilterEditorWidget* editor) override;
+
+        private:
+            QPointer<FiltersListWidget> _parent;
+        };
+
+        void addEmptyFilterLine();
+        void addFilterLineWithCriteriumAsLabel(std::unique_ptr<TrackCriterium> criterium);
+        void addFilterLineWithEditorWidget(FilterEditorWidget* editor);
+        void addFilterLineWithWidget(FilterLineWidget* filterLine);
+
+        Client::ServerInterface* _serverInterface;
         QPushButton* _addMenuButton;
         QVBoxLayout* _verticalLayout;
         QList<FilterLineWidget*> _filters;
