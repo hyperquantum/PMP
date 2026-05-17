@@ -155,13 +155,12 @@ namespace PMP
 
     void CollectionWidget::onHighlightCriteriumChanged()
     {
+        bool criteriumNotEmpty = !_highlightingCriteriumWidget->isEmpty();
+
+        _colorSwitcher->setVisible(criteriumNotEmpty);
+        _ui->highlightTracksResetButton->setEnabled(criteriumNotEmpty);
+
         auto criterium = _highlightingCriteriumWidget->createCriterium();
-
-        bool nothingToHighlight =
-            criterium->equals(*ConstantTrackCriterium::noTracksMatch());
-
-        _colorSwitcher->setVisible(!nothingToHighlight);
-        _ui->highlightTracksResetButton->setEnabled(!nothingToHighlight);
 
         _collectionSourceModel->setHighlightCriterium(*criterium);
     }
