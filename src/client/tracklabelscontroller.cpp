@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2025-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -34,11 +34,11 @@ namespace PMP::Client
             this, &TrackLabelsController::onTrackLabelsChanged
         );
 
-        auto namesFuture = labelsController->getLabelNamesByTrack(hashId);
+        auto labelsFuture = labelsController->getLabelsByTrack(hashId);
 
-        namesFuture.handleOnEventLoop(
+        labelsFuture.handleOnEventLoop(
             this,
-            [this](ResultOrError<QList<QString>, AnyResultMessageCode> outcome)
+            [this](ResultOrError<QList<LabelIdAndName>, AnyResultMessageCode> outcome)
             {
                 if (outcome.failed())
                 {
@@ -55,7 +55,15 @@ namespace PMP::Client
 
     QList<QString> TrackLabelsController::getLabelNames()
     {
-        return _labelNames;
+        QList<QString> result;
+        result.reserve(_labels.size());
+
+        for (auto const& label : _labels)
+        {
+            result << label.name();
+        }
+
+        return result;
     }
 
     SimpleFuture<AnyResultMessageCode> TrackLabelsController::addLabel(QString labelName)
@@ -63,71 +71,62 @@ namespace PMP::Client
         return _labelsController->applyLabelToTrack(_hashId, labelName);
     }
 
-    SimpleFuture<AnyResultMessageCode> TrackLabelsController::removeLabel(QString labelName)
+    SimpleFuture<AnyResultMessageCode> TrackLabelsController::removeLabel(
+        QString labelName)
     {
         return _labelsController->removeLabelFromTrack(_hashId, labelName);
     }
 
-    void TrackLabelsController::onTrackLabelsChanged(LocalHashId hashId,
-                                                     QList<quint32> labelsAddedIds,
-                                                     QList<quint32> labelsRemovedIds)
+    void TrackLabelsController::onTrackLabelsChanged(LocalHashId hashId)
     {
-        auto removedNamesFuture = _labelsController->getLabelNamesByIds(labelsRemovedIds);
-        auto addedNamesFuture = _labelsController->getLabelNamesByIds(labelsAddedIds);
+        auto labelsFuture = _labelsController->getLabelsByTrack(hashId);
 
-        addedNamesFuture.handleOnEventLoop(
+        labelsFuture.handleOnEventLoop(
             this,
-            [this, labelsAddedIds](
-                ResultOrError<QHash<quint32,QString>, AnyResultMessageCode> outcome)
+            [this](ResultOrError<QList<LabelIdAndName>, AnyResultMessageCode> outcome)
             {
                 if (outcome.failed())
                 {
-                    qWarning() << "TrackLabelsController: failed to fetch label names of"
-                                  " IDs" << labelsAddedIds
-                               << "; error:" << errorCodeString(outcome.error());
+                    qWarning()
+                        << "TrackLabelsController: failed to update labels of track"
+                        << _hashId << "; error:" << errorCodeString(outcome.error());
                     return;
                 }
 
-                auto namesToAdd = outcome.result().values();
-                _labelNames.append(namesToAdd);
-
-                Q_EMIT labelsAdded(namesToAdd);
-            }
-        );
-
-        removedNamesFuture.handleOnEventLoop(
-            this,
-            [this, labelsRemovedIds](
-                ResultOrError<QHash<quint32,QString>, AnyResultMessageCode> outcome)
-            {
-                if (outcome.failed())
-                {
-                    qWarning() << "TrackLabelsController: failed to fetch label names of"
-                                  " IDs" << labelsRemovedIds
-                               << "; error:" << errorCodeString(outcome.error());
-                    return;
-                }
-
-                auto namesToRemove = outcome.result().values();
-
-                _labelNames.removeIf(
-                    [namesToRemove](QString name) { return namesToRemove.contains(name); }
-                );
-
-                Q_EMIT labelsRemoved(namesToRemove);
+                receivedCompleteList(outcome.result());
             }
         );
     }
 
-    void TrackLabelsController::receivedCompleteList(QList<QString> labelNames)
+    void TrackLabelsController::receivedCompleteList(QList<LabelIdAndName> labels)
     {
-        if (_labelNames.isEmpty())
+        QList<QString> namesAdded;
+
+        QHash<quint32, LabelIdAndName> asHash;
+        asHash.reserve(labels.size());
+
+        for (auto const& label : labels)
         {
-            _labelNames = labelNames;
-            Q_EMIT labelsAdded(labelNames);
-            return;
+            asHash.insert(label.id(), label);
+
+            if (!_labels.contains(label.id()))
+                namesAdded << label.name();
         }
 
-        // TODO
+        QList<QString> namesRemoved;
+
+        for (auto const& label : _labels)
+        {
+            if (!asHash.contains(label.id()))
+                namesRemoved << label.name();
+        }
+
+        _labels = asHash;
+
+        if (!namesAdded.isEmpty())
+            Q_EMIT labelsAdded(namesAdded);
+
+        if (!namesRemoved.isEmpty())
+            Q_EMIT labelsRemoved(namesRemoved);
     }
 }

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2025-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -44,11 +44,17 @@ namespace PMP::Client
                                                              QString label) override;
         SimpleFuture<AnyResultMessageCode> removeLabelFromTrack(LocalHashId hashId,
                                                                 QString label) override;
+
         Future<QList<QString>, AnyResultMessageCode> getLabelNamesByTrack(
             LocalHashId hashId) override;
+        Future<QList<LabelIdAndName>, AnyResultMessageCode> getLabelsByTrack(
+            LocalHashId hashId) override;
+
         Future<QHash<quint32,QString>, AnyResultMessageCode> getLabelNamesByIds(
             QList<quint32> labelIds) override;
+
         Future<QList<QString>, AnyResultMessageCode> getActiveLabelNames() override;
+        Future<QList<LabelIdAndName>, AnyResultMessageCode> getActiveLabels() override;
 
     private Q_SLOTS:
         void onTrackLabelsChanged(LocalHashId hashId, QList<quint32> labelsAddedIds,
@@ -62,6 +68,13 @@ namespace PMP::Client
             bool fetched { false };
         };
 
+        struct LabelData
+        {
+            QString name;
+            QSet<LocalHashId> hashes;
+            bool hashesFetched { false };
+        };
+
         Future<QSet<quint32>, AnyResultMessageCode> getLabelsByTrackInternal(
             LocalHashId hashId);
 
@@ -73,6 +86,9 @@ namespace PMP::Client
         template<typename TContainer>
         Future<QList<QString>, AnyResultMessageCode>
             convertLabelIdsToLabelNamesInternal(TContainer labelIds);
+        template<typename TContainer>
+        Future<QList<LabelIdAndName>, AnyResultMessageCode>
+            convertLabelIdsToLabelIdAndNamesInternal(TContainer labelIds);
 
         template<typename TContainer>
         Future<SuccessType, AnyResultMessageCode> fetchMissingLabelNames(
@@ -83,10 +99,14 @@ namespace PMP::Client
         template<typename TContainer>
         QList<QString> convertLabelIdsToLabelNamesAssumingFetched(TContainer labelIds);
 
+        template<typename TContainer>
+        QList<LabelIdAndName> convertLabelIdsToLabelIdAndNamesAssumingFetched(
+            TContainer labelIds);
+
         ServerConnection* _connection;
-        QHash<quint32, QString> _labelIdToName;
+        QHash<quint32, LabelData> _labelData;
         QHash<QString, quint32> _labelNameToId;
-        QHash<LocalHashId, HashLabelsData> _hashToLabelIds;
+        QHash<LocalHashId, HashLabelsData> _hashData;
     };
 }
 #endif

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2025-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,8 +23,11 @@
 #include "common/future.h"
 #include "common/resultmessageerrorcode.h"
 
+#include "client/labelidandname.h"
+
 #include "localhashid.h"
 
+#include <QHash>
 #include <QList>
 #include <QObject>
 #include <QString>
@@ -50,15 +53,14 @@ namespace PMP::Client
         void labelsRemoved(QList<QString> labelNames);
 
     private Q_SLOTS:
-        void onTrackLabelsChanged(LocalHashId hashId, QList<quint32> labelsAddedIds,
-                                  QList<quint32> labelsRemovedIds);
+        void onTrackLabelsChanged(LocalHashId hashId);
 
     private:
-        void receivedCompleteList(QList<QString> labelNames);
+        void receivedCompleteList(QList<LabelIdAndName> labels);
 
         LocalHashId _hashId;
         LabelsController* _labelsController;
-        QList<QString> _labelNames;
+        QHash<quint32, LabelIdAndName> _labels;
     };
 }
 #endif

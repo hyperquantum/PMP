@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2025-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,6 +23,7 @@
 #include "common/future.h"
 #include "common/resultmessageerrorcode.h"
 
+#include "client/labelidandname.h"
 #include "client/localhashid.h"
 
 #include <QObject>
@@ -41,15 +42,20 @@ namespace PMP::Client
         virtual SimpleFuture<AnyResultMessageCode> removeLabelFromTrack(
                                                                      LocalHashId hashId,
                                                                      QString label) = 0;
+
         virtual Future<QList<QString>, AnyResultMessageCode> getLabelNamesByTrack(
                                                                 LocalHashId hashId) = 0;
+        virtual Future<QList<LabelIdAndName>, AnyResultMessageCode> getLabelsByTrack(
+                                                                LocalHashId hashId) = 0;
+
         virtual Future<QHash<quint32,QString>, AnyResultMessageCode> getLabelNamesByIds(
                                                             QList<quint32> labelIds) = 0;
+
         virtual Future<QList<QString>, AnyResultMessageCode> getActiveLabelNames() = 0;
+        virtual Future<QList<LabelIdAndName>, AnyResultMessageCode> getActiveLabels() = 0;
 
     Q_SIGNALS:
-        void trackLabelsChanged(LocalHashId hashId, QList<quint32> labelsAddedIds,
-                                QList<quint32> labelsRemovedIds);
+        void trackLabelsChanged(LocalHashId hashId);
 
     protected:
         explicit LabelsController(QObject* parent) : QObject(parent) {}
