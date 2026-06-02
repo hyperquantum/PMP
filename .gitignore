@@ -3,6 +3,9 @@ bin/*
 !bin/.empty
 build/
 
+# IDE stuff
+.qtcreator
+
 # CMake output
 CMakeLists.txt.user
 
