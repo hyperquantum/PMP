@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2015-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -78,8 +78,8 @@ namespace PMP
         None = 0,
         PlayerStateMessage = 1,
         VolumeChangedMessage = 2,
-        TrackInfoMessage = 3,
-        BulkTrackInfoMessage = 4,
+        QueueEntryInfoMessage = 3,
+        BulkQueueEntryInfoMessage = 4,
         QueueContentsMessage = 5,
         QueueEntryRemovedMessage = 6,
         QueueEntryAddedMessage = 7,
@@ -127,8 +127,8 @@ namespace PMP
     {
         None = 0,
         SingleByteActionMessage = 1,
-        TrackInfoRequestMessage = 2,
-        BulkTrackInfoRequestMessage = 3,
+        QueueEntryInfoRequestMessage = 2,
+        BulkQueueEntryInfoRequestMessage = 3,
         QueueFetchRequestMessage = 4,
         QueueEntryRemovalRequestMessage = 5,
         GeneratorNonRepetitionChangeMessage = 6,

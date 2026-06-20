@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2014-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -1214,7 +1214,7 @@ namespace PMP::Server
 
         QByteArray message;
         message.reserve(2 + 2 + 4 + 8 + 2 + 2 + titleData.size() + artistData.size());
-        NetworkProtocol::append2Bytes(message, ServerMessageType::TrackInfoMessage);
+        NetworkProtocol::append2Bytes(message, ServerMessageType::QueueEntryInfoMessage);
         NetworkUtil::append2Bytes(message, trackStatus);
         NetworkUtil::append4Bytes(message, queueID);
 
@@ -1259,7 +1259,8 @@ namespace PMP::Server
             4 + queueIDs.size() * (2 + 8 + 8 + /*title*/20 + /*artist*/15)
         );
 
-        NetworkProtocol::append2Bytes(message, ServerMessageType::BulkTrackInfoMessage);
+        NetworkProtocol::append2Bytes(message,
+                                      ServerMessageType::BulkQueueEntryInfoMessage);
         NetworkUtil::append2Bytes(message, (uint)queueIDs.size());
 
         PlayerQueue& queue = _player->queue();
@@ -2333,11 +2334,11 @@ namespace PMP::Server
         case ClientMessageType::ParameterlessActionMessage:
             parseParameterlessActionMessage(message);
             return;
-        case ClientMessageType::TrackInfoRequestMessage:
-            parseTrackInfoRequestMessage(message);
+        case ClientMessageType::QueueEntryInfoRequestMessage:
+            parseQueueEntryInfoRequestMessage(message);
             return;
-        case ClientMessageType::BulkTrackInfoRequestMessage:
-            parseBulkTrackInfoRequestMessage(message);
+        case ClientMessageType::BulkQueueEntryInfoRequestMessage:
+            parseBulkQueueEntryInfoRequestMessage(message);
             return;
         case ClientMessageType::BulkQueueEntryHashRequestMessage:
             parseBulkQueueEntryHashRequestMessage(message);
@@ -2765,7 +2766,7 @@ namespace PMP::Server
         _serverInterface->seekTo(position);
     }
 
-    void ConnectedClient::parseTrackInfoRequestMessage(const QByteArray& message)
+    void ConnectedClient::parseQueueEntryInfoRequestMessage(const QByteArray& message)
     {
         if (message.length() != 6)
             return; /* invalid message */
@@ -2780,7 +2781,7 @@ namespace PMP::Server
         sendQueueEntryInfoMessage(queueID);
     }
 
-    void ConnectedClient::parseBulkTrackInfoRequestMessage(const QByteArray& message)
+    void ConnectedClient::parseBulkQueueEntryInfoRequestMessage(const QByteArray& message)
     {
         if (message.length() < 6 || (message.length() - 2) % 4 != 0)
             return; /* invalid message */

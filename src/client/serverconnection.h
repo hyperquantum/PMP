@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2014-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -382,8 +382,8 @@ namespace PMP::Client
         void parseUserPlayingForModeMessage(QByteArray const& message);
 
         void parseQueueContentsMessage(QByteArray const& message);
-        void parseTrackInfoMessage(QByteArray const& message);
-        void parseBulkTrackInfoMessage(QByteArray const& message);
+        void parseQueueEntryInfoMessage(QByteArray const& message);
+        void parseBulkQueueEntryInfoMessage(QByteArray const& message);
         void parsePossibleFilenamesForQueueEntryMessage(QByteArray const& message);
         void parseBulkQueueEntryHashMessage(QByteArray const& message);
         void parseQueueEntryAddedMessage(QByteArray const& message);

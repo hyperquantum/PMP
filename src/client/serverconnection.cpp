@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2014-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -1541,7 +1541,7 @@ namespace PMP::Client
         QByteArray message;
         message.reserve(6);
         NetworkProtocol::append2Bytes(message,
-                                      ClientMessageType::TrackInfoRequestMessage);
+                                      ClientMessageType::QueueEntryInfoRequestMessage);
         NetworkUtil::append4Bytes(message, queueID);
 
         sendBinaryMessage(message);
@@ -1564,7 +1564,7 @@ namespace PMP::Client
         QByteArray message;
         message.reserve(2 + 4 * queueIDs.size());
         NetworkProtocol::append2Bytes(message,
-                                      ClientMessageType::BulkTrackInfoRequestMessage);
+                                     ClientMessageType::BulkQueueEntryInfoRequestMessage);
 
         for (auto QID : queueIDs)
         {
@@ -2315,11 +2315,11 @@ namespace PMP::Client
         case ServerMessageType::VolumeChangedMessage:
             parseVolumeChangedMessage(message);
             return;
-        case ServerMessageType::TrackInfoMessage:
-            parseTrackInfoMessage(message);
+        case ServerMessageType::QueueEntryInfoMessage:
+            parseQueueEntryInfoMessage(message);
             return;
-        case ServerMessageType::BulkTrackInfoMessage:
-            parseBulkTrackInfoMessage(message);
+        case ServerMessageType::BulkQueueEntryInfoMessage:
+            parseBulkQueueEntryInfoMessage(message);
             return;
         case ServerMessageType::BulkQueueEntryHashMessage:
             parseBulkQueueEntryHashMessage(message);
@@ -2931,7 +2931,7 @@ namespace PMP::Client
         Q_EMIT receivedQueueContents(queueLength, startOffset, queueIDs);
     }
 
-    void ServerConnection::parseTrackInfoMessage(QByteArray const& message)
+    void ServerConnection::parseQueueEntryInfoMessage(QByteArray const& message)
     {
         bool preciseLength = _serverProtocolNo >= 13;
 
@@ -2995,7 +2995,7 @@ namespace PMP::Client
         Q_EMIT receivedTrackInfo(queueId, type, lengthMilliseconds, title, artist);
     }
 
-    void ServerConnection::parseBulkTrackInfoMessage(QByteArray const& message)
+    void ServerConnection::parseBulkQueueEntryInfoMessage(QByteArray const& message)
     {
         if (message.length() < 4)
         {
