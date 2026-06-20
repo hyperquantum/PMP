@@ -13,6 +13,8 @@
 
 - extensive testing of the server
 - test all clients
+- test the latest client with older server versions
+- test the latest server with older client versions
 - test the script for creating a release with a complete build from scratch
 
 ## 3. Release
