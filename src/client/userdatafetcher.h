@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2016-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -52,6 +52,21 @@ namespace PMP::Client
     Q_SIGNALS:
         void dataReceivedForUser(quint32 userId);
         void userTrackDataChanged(quint32 userId, LocalHashId hashId);
+    };
+
+    struct UserDataFetcher::HashData
+    {
+        HashData()
+         : previouslyHeardReceived(false), scoreReceived(false)
+        {
+            //
+        }
+
+        bool previouslyHeardReceived;
+        QDateTime previouslyHeard;
+
+        bool scoreReceived;
+        qint16 scorePermillage;
     };
 
     class UserDataFetcherImpl : public UserDataFetcher
@@ -118,21 +133,6 @@ namespace PMP::Client
         QHash<quint32, UserData> _userData;
         QHash<quint32, QSet<LocalHashId>> _hashesToFetchForUsers;
         QSet<quint32> _pendingNotificationsUsers;
-    };
-
-    struct UserDataFetcher::HashData
-    {
-        HashData()
-         : previouslyHeardReceived(false), scoreReceived(false)
-        {
-            //
-        }
-
-        bool previouslyHeardReceived;
-        QDateTime previouslyHeard;
-
-        bool scoreReceived;
-        qint16 scorePermillage;
     };
 }
 #endif
