@@ -1,55 +1,49 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
 
 jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            extra_packages: ""
+          - os: ubuntu-26.04
+            extra_packages: ""
 
-  build-ubuntu-jammy:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v3
-      - name: Update packages
-        run: sudo apt-get update
-      - name: Install packages PMP depends on
-        run: >
-          sudo apt-get install -y --fix-missing
-          libtag1-dev
-          default-libmysqlclient-dev
-          libglx-dev
-          libgl1-mesa-dev
-          qt6-base-dev
-          qt6-multimedia-dev
-      - name: Run CMake
-        working-directory: bin
-        run: cmake -D "CMAKE_BUILD_TYPE:STRING=Debug" ..
-      - name: Run make
-        working-directory: bin
-        run: make -j2 -k
-      - name: Run CTest
-        working-directory: bin
-        run: ctest -V --no-tests=error
+    runs-on: ${{ matrix.os }}
 
-  build-ubuntu-noble:
-    runs-on: ubuntu-24.04
     steps:
+      - name: Get GCC version
+        run: gcc --version
+
+      - name: Get CMake version
+        run: cmake --version
+
       - name: Check out repository code
         uses: actions/checkout@v4
+
       - name: Update packages
         run: sudo apt-get update
+
       - name: Install packages PMP depends on
         run: >
-          sudo apt-get install -y --fix-missing
+          sudo apt-get install -y
           libtag1-dev
           default-libmysqlclient-dev
           qt6-base-dev
           qt6-multimedia-dev
-      - name: Run CMake
-        working-directory: bin
-        run: cmake -D "CMAKE_BUILD_TYPE:STRING=Debug" ..
-      - name: Run make
-        working-directory: bin
-        run: make -j2 -k
-      - name: Run CTest
-        working-directory: bin
-        run: ctest -V --no-tests=error
+          ${{ matrix.extra_packages }}
+
+      - name: Configure PMP
+        run: cmake -B bin -G Ninja -DCMAKE_BUILD_TYPE=Debug
+
+      - name: Build PMP
+        run: cmake --build bin --parallel -- -k 100
+
+      - name: Run tests
+        run: ctest --test-dir bin -V --no-tests=error
