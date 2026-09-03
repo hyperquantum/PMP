@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2025-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,7 +24,6 @@
 
 #include "client/collectionwatcher.h"
 #include "client/currenttrackmonitor.h"
-#include "client/localhashidrepository.h"
 #include "client/playercontroller.h"
 #include "client/queuecontroller.h"
 #include "client/queuehashesmonitor.h"
@@ -232,7 +231,6 @@ namespace PMP
                                                 QueueHashesMonitor* queueHashesMonitor)
      : QAbstractTableModel(parent),
         _serverInterface(serverInterface),
-        _hashIdRepository(serverInterface->hashIdRepository()),
         _collectionWatcher(&serverInterface->collectionWatcher()),
         _queueHashesMonitor(queueHashesMonitor)
     {
@@ -367,17 +365,24 @@ namespace PMP
 
         if (indexes.isEmpty()) return nullptr;
 
-        auto hashes =
-            DragDropUtils::getHashes(
+        auto hashesOrNull =
+            DragDropUtils::tryGetHashes(
                 indexes,
                 [this](QModelIndex index)
                 {
-                    auto hashId = trackAt(index);
-                    return _hashIdRepository->getHash(hashId);
+                    auto localId = trackAt(index);
+
+                    auto hashOrNull =
+                        _collectionWatcher->tryConvertLocalTrackIdToHash(localId);
+
+                    return hashOrNull;
                 }
             );
 
-        return DragDropUtils::convertHashesToMimeData(hashes);
+        if (hashesOrNull == null)
+            return nullptr;
+
+        return DragDropUtils::convertHashesToMimeData(hashesOrNull.value());
     }
 
     void SearchResultsTableModel::onPlayerStateChanged(PlayerState playerState)

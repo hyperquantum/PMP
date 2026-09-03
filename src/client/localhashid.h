@@ -58,9 +58,9 @@ namespace PMP::Client
         return debug;
     }
 
-    constexpr inline uint qHash(LocalHashId const& id)
+    constexpr inline uint qHash(LocalHashId const& id, size_t seed)
     {
-        return id.value();
+        return qHashMulti(seed, id.value());
     }
 }
 

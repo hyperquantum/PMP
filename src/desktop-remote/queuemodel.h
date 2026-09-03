@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -31,7 +31,7 @@ QT_FORWARD_DECLARE_CLASS(QTimer)
 
 namespace PMP::Client
 {
-    class LocalHashIdRepository;
+    class CollectionWatcher;
     class QueueEntryInfo;
     class QueueEntryInfoStorage;
     class ServerInterface;
@@ -158,7 +158,7 @@ namespace PMP
         void markLastHeardColumnAsChanged();
         void markUserDataColumnsAsChanged();
 
-        Client::LocalHashIdRepository* _hashIdRepository;
+        Client::CollectionWatcher* _collectionWatcher;
         Client::UserDataFetcher* _userDataFetcher;
         QueueMediator* _source;
         Client::QueueEntryInfoStorage* _infoStorage;

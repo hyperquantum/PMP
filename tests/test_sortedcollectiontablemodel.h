@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2023-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -134,6 +134,14 @@ public:
     bool downloadingInProgress() const override;
 
     QHash<LocalHashId, CollectionTrackInfo> getCollection() override;
+
+    Future<LocalHashId, AnyResultMessageCode> convertTrackHashToLocalId(
+        FileHash const& hash) override;
+    Future<FileHash, AnyResultMessageCode> convertLocalTrackIdToHash(
+        LocalHashId localId) override;
+    Nullable<LocalHashId> tryConvertTrackHashToLocalId(FileHash const& hash) override;
+    Nullable<FileHash> tryConvertLocalTrackIdToHash(LocalHashId localId) override;
+
     Nullable<CollectionTrackInfo> getTrackFromCache(LocalHashId hashId) override;
     Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
                                                              LocalHashId hashId) override;
@@ -154,8 +162,6 @@ public:
     void setPlayerController(PlayerController* playerController);
     void setCollectionWatcher(CollectionWatcher* collectionWatcher);
     void setCurrentTrackMonitor(CurrentTrackMonitor* currentTrackMonitor);
-
-    PMP::Client::LocalHashIdRepository* hashIdRepository() const override;
 
     PMP::Client::AuthenticationController& authenticationController() override;
 
@@ -185,7 +191,6 @@ public:
     bool connected() const override { return true; }
 
 private:
-    LocalHashIdRepository* _localHashIdRepository;
     UserDataFetcher* _userDataFetcher { nullptr };
     PlayerController* _playerController { nullptr };
     CollectionWatcher* _collectionWatcher { nullptr };

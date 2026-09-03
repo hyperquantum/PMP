@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2023-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,25 +23,62 @@
 #include "common/filehash.h"
 
 #include "localhashid.h"
+#include "trackhashorid.h"
+#include "trackserverid.h"
 
 #include <QHash>
 #include <QMutex>
 
 namespace PMP::Client
 {
+    enum class LocalTrackIdMode { ServerId, Hash };
+
     class LocalHashIdRepository
     {
     public:
-        LocalHashId getOrRegisterId(FileHash const& hash);
-        LocalHashId getId(FileHash const& hash) const;
+        void init(LocalTrackIdMode mode);
 
-        FileHash getHash(LocalHashId id) const;
+        LocalTrackIdMode mode() const;
+
+        LocalHashId registerTrack(TrackServerId trackId, FileHash const& hash);
+        LocalHashId registerTrackByServerId(TrackServerId trackId);
+        LocalHashId registerTrackByHash(FileHash const& hash);
+
+        LocalHashId getIdByServerId(TrackServerId trackId);
+        LocalHashId getIdByHash(FileHash const& hash);
+
+        TrackHashOrId getHashOrServerIdByLocalId(LocalHashId id);
+        TrackServerId getServerIdByLocalId(LocalHashId id);
+        FileHash getHashByLocalId(LocalHashId id);
+
+        LocalHashId tryGetIdByHash(FileHash const& hash);
 
     private:
+        struct LocalIdData
+        {
+            TrackServerId serverId;
+            FileHash hash;
+        };
+
+        struct ServerIdData
+        {
+            LocalHashId localId;
+            //FileHash hash;
+        };
+
+        struct HashData
+        {
+            LocalHashId localId;
+            //TrackServerId serverId;
+        };
+
         mutable QMutex _mutex;
         uint _lastId {0};
-        QHash<FileHash, uint> _hashToId;
-        QHash<uint, FileHash> _idToHash;
+        QHash<LocalHashId, LocalIdData> _localIds;
+        QHash<TrackServerId, ServerIdData> _serverIds;
+        QHash<FileHash, HashData> _hashes;
+        bool _initialized { false };
+        LocalTrackIdMode _mode;
     };
 }
 #endif

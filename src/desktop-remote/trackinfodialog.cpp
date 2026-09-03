@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2020-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -26,7 +26,6 @@
 #include "client/authenticationcontroller.h"
 #include "client/collectionwatcher.h"
 #include "client/generalcontroller.h"
-#include "client/localhashidrepository.h"
 #include "client/queuecontroller.h"
 #include "client/serverinterface.h"
 #include "client/userdatafetcher.h"
@@ -48,23 +47,22 @@ namespace PMP
     TrackInfoDialog::TrackInfoDialog(QWidget* parent,
                                      ServerInterface* serverInterface,
                                      UserForStatisticsDisplay* userForStatisticsDisplay,
-                                     LocalHashId hashId,
+                                     LocalHashId trackId,
                                      quint32 queueId)
      : QDialog(parent, Qt::WindowTitleHint | Qt::WindowCloseButtonHint),
         _ui(new Ui::TrackInfoDialog),
         _serverInterface(serverInterface),
         _userStatisticsDisplay(userForStatisticsDisplay),
         _lastHeardUpdateTimer(new QTimer(this)),
-        _trackHashId(hashId),
+        _trackId(trackId),
         _queueId(queueId)
     {
         init();
 
         fillQueueId();
-        fillHash();
 
         auto trackInfoOrNull =
-            serverInterface->collectionWatcher().getTrackFromCache(hashId);
+            serverInterface->collectionWatcher().getTrackFromCache(trackId);
 
         if (trackInfoOrNull == null) /* not found? */
         {
@@ -75,7 +73,7 @@ namespace PMP
             fillTrackDetails(trackInfoOrNull.value());
         }
 
-        fillUserData(_trackHashId, _userId);
+        fillUserData(_trackId, _userId);
     }
 
     TrackInfoDialog::TrackInfoDialog(QWidget* parent,
@@ -87,13 +85,12 @@ namespace PMP
         _serverInterface(serverInterface),
         _userStatisticsDisplay(userForStatisticsDisplay),
         _lastHeardUpdateTimer(new QTimer(this)),
-        _trackHashId(track.hashId())
+        _trackId(track.hashId())
     {
         init();
 
-        fillHash();
         fillTrackDetails(track);
-        fillUserData(_trackHashId, _userId);
+        fillUserData(_trackId, _userId);
     }
 
     TrackInfoDialog::~TrackInfoDialog()
@@ -103,7 +100,7 @@ namespace PMP
 
     void TrackInfoDialog::newTrackReceived(CollectionTrackInfo track)
     {
-        if (track.hashId() != _trackHashId)
+        if (track.hashId() != _trackId)
             return;
 
         fillTrackDetails(track);
@@ -111,7 +108,7 @@ namespace PMP
 
     void TrackInfoDialog::trackDataChanged(CollectionTrackInfo track)
     {
-        if (track.hashId() != _trackHashId)
+        if (track.hashId() != _trackId)
             return;
 
         fillTrackDetails(track);
@@ -122,7 +119,7 @@ namespace PMP
         if (userId != _userId)
             return;
 
-        fillUserData(_trackHashId, _userId);
+        fillUserData(_trackId, _userId);
     }
 
     void TrackInfoDialog::updateLastHeard()
@@ -177,7 +174,7 @@ namespace PMP
         WidgetUtils::setFontBold(_ui->countTotalLabel);
         WidgetUtils::setFontBold(_ui->countForScoreLabel);
 
-        _historyModel = new HistoryModel(this, _userId, _trackHashId, _serverInterface);
+        _historyModel = new HistoryModel(this, _userId, _trackId, _serverInterface);
         _ui->historyTableView->setModel(_historyModel);
 
         connect(
@@ -207,7 +204,7 @@ namespace PMP
 
                 _historyModel->setUserId(_userId);
 
-                fillUserData(_trackHashId, _userId);
+                fillUserData(_trackId, _userId);
             }
         );
 
@@ -219,6 +216,25 @@ namespace PMP
             layout->removeWidget(_ui->albumArtistLabel);
             layout->removeWidget(_ui->albumArtistValueLabel);
         }
+
+        _serverInterface->collectionWatcher().convertLocalTrackIdToHash(_trackId)
+            .handleOnEventLoop(
+                this,
+                [this](ResultOrError<FileHash, AnyResultMessageCode> outcome)
+                {
+                    if (outcome.failed())
+                    {
+                        qWarning() << "track info dialog: failed to obtain hash for track"
+                                   << _trackId;
+                        return;
+                    }
+
+                    auto hash = outcome.result();
+                    _hash = hash;
+                    _ui->hashValueLabel->setText(hash.toFancyString());
+                    enableDisableButtons();
+                }
+            );
 
         _serverInterface->authenticationController()
             .getUserAccounts()
@@ -275,7 +291,7 @@ namespace PMP
             this,
             [this, queueController]()
             {
-                queueController->insertQueueEntryAtFront(_trackHashId);
+                queueController->insertQueueEntryAtFront(_trackId);
             }
         );
         connect(
@@ -283,7 +299,7 @@ namespace PMP
             this,
             [this, queueController]()
             {
-                queueController->insertQueueEntryAtEnd(_trackHashId);
+                queueController->insertQueueEntryAtEnd(_trackId);
             }
         );
 
@@ -292,7 +308,7 @@ namespace PMP
             this,
             [this]()
             {
-                auto hash = _serverInterface->hashIdRepository()->getHash(_trackHashId);
+                auto hash = _hash.value();
                 QApplication::clipboard()->setText(hash.toString());
             }
         );
@@ -392,10 +408,11 @@ namespace PMP
     void TrackInfoDialog::enableDisableButtons()
     {
         auto connected = _serverInterface->connected();
-        auto haveHash = !_trackHashId.isZero();
+        bool haveTrackId = !_trackId.isZero();
+        bool haveHash = _hash.hasValue();
 
-        _ui->addToQueueFrontButton->setEnabled(connected && haveHash);
-        _ui->addToQueueEndButton->setEnabled(connected && haveHash);
+        _ui->addToQueueFrontButton->setEnabled(connected && haveTrackId);
+        _ui->addToQueueEndButton->setEnabled(connected && haveTrackId);
 
         _ui->copyHashButton->setEnabled(haveHash);
     }
@@ -406,14 +423,6 @@ namespace PMP
         {
             _ui->queueIdValueLabel->setText(QString::number(_queueId));
         }
-    }
-
-    void TrackInfoDialog::fillHash()
-    {
-        auto hash = _serverInterface->hashIdRepository()->getHash(_trackHashId);
-        _ui->hashValueLabel->setText(hash.toFancyString());
-
-        _historyModel->setTrack(_trackHashId);
     }
 
     void TrackInfoDialog::fillTrackDetails(const CollectionTrackInfo& trackInfo)

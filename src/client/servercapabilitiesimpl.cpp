@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -80,5 +80,10 @@ namespace PMP::Client
     bool ServerCapabilitiesImpl::supportsRequestingIndividualTrackInfo() const
     {
         return _serverProtocolNumber >= 27;
+    }
+
+    bool ServerCapabilitiesImpl::usesServerIdsForAllTracks() const
+    {
+        return _serverProtocolNumber >= 29;
     }
 }

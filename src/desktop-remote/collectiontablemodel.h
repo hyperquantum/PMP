@@ -39,7 +39,7 @@
 
 namespace PMP::Client
 {
-    class LocalHashIdRepository;
+    class CollectionWatcher;
     class QueueHashesMonitor;
     class ServerInterface;
     class UserDataFetcher;
@@ -136,7 +136,7 @@ namespace PMP
                           const Client::CollectionTrackInfo& track2,
                           Qt::SortOrder sortOrder) const;
 
-        Client::LocalHashIdRepository* _hashIdRepository;
+        Client::CollectionWatcher* _collectionWatcher;
         QVector<Client::CollectionTrackInfo*> _tracks;
         QHash<Client::LocalHashId, int> _hashesToInnerIndexes;
         QVector<int> _innerToOuterIndexMap;
@@ -178,13 +178,17 @@ namespace PMP
         void onNewTrackReceived(Client::CollectionTrackInfo track);
 
     private:
+        enum class TextFilterMode { Strings, Hash };
+
         Client::ServerInterface* _serverInterface;
+        Client::CollectionWatcher* _collectionWatcher;
         SortedCollectionTableModel* _source;
         SearchData* _searchData;
         Client::SearchQuery _searchQuery;
-        FileHash _searchFileHash;
+        Nullable<FileHash> _searchFileHash;
         Nullable<Client::LocalHashId> _searchHashId;
         TrackJudge _filteringTrackJudge;
+        TextFilterMode _textFilterMode { TextFilterMode::Strings };
     };
 }
 #endif

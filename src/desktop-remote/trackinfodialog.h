@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2020-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,6 +19,9 @@
 
 #ifndef PMP_TRACKINFODIALOG_H
 #define PMP_TRACKINFODIALOG_H
+
+#include "common/filehash.h"
+#include "common/nullable.h"
 
 #include "client/authenticationcontroller.h"
 #include "client/collectiontrackinfo.h"
@@ -50,7 +53,7 @@ namespace PMP
         TrackInfoDialog(QWidget* parent,
                         Client::ServerInterface* serverInterface,
                         UserForStatisticsDisplay* userForStatisticsDisplay,
-                        Client::LocalHashId hashId, quint32 queueId = 0);
+                        Client::LocalHashId trackId, quint32 queueId = 0);
 
         TrackInfoDialog(QWidget* parent,
                         Client::ServerInterface* serverInterface,
@@ -76,7 +79,6 @@ namespace PMP
         void enableDisableButtons();
 
         void fillQueueId();
-        void fillHash();
         void fillTrackDetails(Client::CollectionTrackInfo const& trackInfo);
         void fillUserData(Client::LocalHashId hashId, quint32 userId);
         void clearTrackDetails();
@@ -87,7 +89,8 @@ namespace PMP
         Client::ServerInterface* _serverInterface;
         UserForStatisticsDisplay* _userStatisticsDisplay;
         QTimer* _lastHeardUpdateTimer;
-        Client::LocalHashId _trackHashId;
+        Client::LocalHashId _trackId;
+        Nullable<FileHash> _hash;
         QDateTime _lastHeard;
         quint32 _queueId { 0 };
         quint32 _userId { 0 };

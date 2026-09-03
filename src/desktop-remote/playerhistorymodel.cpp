@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2017-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,18 +22,16 @@
 #include "common/filehash.h"
 #include "common/util.h"
 
+#include "client/collectionwatcher.h"
 #include "client/generalcontroller.h"
 #include "client/historycontroller.h"
-#include "client/localhashidrepository.h"
 #include "client/queueentryinfostorage.h"
 #include "client/serverinterface.h"
 
 #include "colors.h"
+#include "dragdroputils.h"
 
 #include <QBrush>
-#include <QBuffer>
-#include <QDataStream>
-#include <QMimeData>
 #include <QVector>
 
 #include <utility>
@@ -46,7 +44,7 @@ namespace PMP
                                            ServerInterface* serverInterface)
      : QAbstractTableModel(parent),
        _historySizeGoal(20),
-       _hashIdRepository(serverInterface->hashIdRepository()),
+       _collectionWatcher(&serverInterface->collectionWatcher()),
        _infoStorage(&serverInterface->queueEntryInfoStorage())
     {
         connect(
@@ -295,12 +293,8 @@ namespace PMP
 
         if (indexes.isEmpty()) return nullptr;
 
-        QBuffer buffer;
-        buffer.open(QIODevice::WriteOnly);
-        QDataStream stream(&buffer);
-        stream.setVersion(QDataStream::Qt_5_2);
-
         QVector<FileHash> hashes;
+
         int prevRow = -1;
         for (auto& index : indexes)
         {
@@ -316,36 +310,27 @@ namespace PMP
                 continue;
             }
 
-            auto hashId = info->hashId();
-            if (hashId.isZero())
+            auto localId = info->hashId();
+            if (localId.isZero())
             {
                 qDebug() << " ignoring zero hash ID";
                 continue;
             }
 
-            auto hash = _hashIdRepository->getHash(hashId);
+            auto hashOrNull = _collectionWatcher->tryConvertLocalTrackIdToHash(localId);
+            if (hashOrNull == null)
+                return nullptr;
+
+            auto hash = hashOrNull.value();
 
             qDebug() << " row" << row << "; col" << index.column()
-                     << "; hash ID" << hashId
+                     << "; local ID" << localId
                      << "; hash" << hash.dumpToString();
             hashes.append(hash);
         }
 
         if (hashes.empty()) return nullptr;
 
-        stream << (quint32)hashes.size();
-        for (int i = 0; i < hashes.size(); ++i)
-        {
-            stream << (quint64)hashes[i].length();
-            stream << hashes[i].SHA1();
-            stream << hashes[i].MD5();
-        }
-
-        buffer.close();
-
-        QMimeData* data = new QMimeData();
-
-        data->setData("application/x-pmp-filehash", buffer.data());
-        return data;
+        return DragDropUtils::convertHashesToMimeData(hashes);
     }
 }

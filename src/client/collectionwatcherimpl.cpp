@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -73,6 +73,30 @@ namespace PMP::Client
         return _collectionHash;
     }
 
+    Future<LocalHashId, AnyResultMessageCode>
+        CollectionWatcherImpl::convertTrackHashToLocalId(const FileHash& hash)
+    {
+        return _connection->convertTrackHashToLocalId(hash);
+    }
+
+    Future<FileHash, AnyResultMessageCode>
+        CollectionWatcherImpl::convertLocalTrackIdToHash(LocalHashId localId)
+    {
+        return _connection->convertLocalTrackIdToHash(localId);
+    }
+
+    Nullable<LocalHashId> CollectionWatcherImpl::tryConvertTrackHashToLocalId(
+        const FileHash& hash)
+    {
+        return _connection->tryConvertTrackHashToLocalId(hash);
+    }
+
+    Nullable<FileHash> CollectionWatcherImpl::tryConvertLocalTrackIdToHash(
+        LocalHashId localId)
+    {
+        return _connection->tryConvertLocalTrackIdToHash(localId);
+    }
+
     Nullable<CollectionTrackInfo> CollectionWatcherImpl::getTrackFromCache(
                                                                        LocalHashId hashId)
     {
@@ -82,7 +106,7 @@ namespace PMP::Client
         {
             /* download the data if possible */
             if (_connection->serverCapabilities().supportsRequestingIndividualTrackInfo())
-                (void)getTrackInfoInternal(hashId);
+                (void)fetchTrackInfoFromServer(hashId);
 
             return null;
         }
@@ -98,23 +122,18 @@ namespace PMP::Client
         if (it != _collectionHash.end())
             return FutureResult(it.value());
 
-        return getTrackInfoInternal(hashId);
+        return fetchTrackInfoFromServer(hashId);
     }
 
     Future<CollectionTrackInfo, AnyResultMessageCode>
         CollectionWatcherImpl::getTrackInfo(const FileHash& hash)
     {
-        auto hashId = _connection->hashIdRepository()->getId(hash);
+        auto localIdOrNull = _connection->tryConvertTrackHashToLocalId(hash);
 
-        if (!hashId.isZero())
-        {
-            auto it = _collectionHash.find(hashId);
+        if (localIdOrNull != null)
+            return getTrackInfo(localIdOrNull.value());
 
-            if (it != _collectionHash.end())
-                return FutureResult(it.value());
-        }
-
-        return getTrackInfoInternal(hash);
+        return fetchTrackInfoFromServer(hash);
     }
 
     void CollectionWatcherImpl::onConnected()
@@ -170,7 +189,7 @@ namespace PMP::Client
     }
 
     Future<CollectionTrackInfo, AnyResultMessageCode>
-        CollectionWatcherImpl::getTrackInfoInternal(LocalHashId hashId)
+        CollectionWatcherImpl::fetchTrackInfoFromServer(LocalHashId hashId)
     {
         auto future = _connection->getTrackInfo(hashId);
 
@@ -187,7 +206,7 @@ namespace PMP::Client
     }
 
     Future<CollectionTrackInfo, AnyResultMessageCode>
-        CollectionWatcherImpl::getTrackInfoInternal(const FileHash& hash)
+        CollectionWatcherImpl::fetchTrackInfoFromServer(const FileHash& hash)
     {
         auto future = _connection->getTrackInfo(hash);
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -25,7 +25,6 @@
 #include "client/collectionwatcher.h"
 #include "client/currenttrackmonitor.h"
 #include "client/dynamicmodecontroller.h"
-#include "client/localhashidrepository.h"
 #include "client/playercontroller.h"
 #include "client/serverinterface.h"
 #include "client/userdatafetcher.h"
@@ -372,52 +371,82 @@ namespace PMP
         //
     }
 
+    namespace
+    {
+        QString generateTrackStatsOutputText(FileHash const& hash, QString username,
+            UserDataFetcher::HashData const& hashData)
+        {
+            QString output;
+            output.reserve(100);
+
+            output += QString("Hash: %1\n").arg(hash.toString());
+            output += QString("User: %1\n").arg(username);
+
+            QString lastHeard;
+            if (!hashData.previouslyHeardReceived)
+                lastHeard = "unknown";
+            else if (hashData.previouslyHeard.isNull())
+                lastHeard = "never";
+            else
+                lastHeard =
+                    hashData.previouslyHeard.toLocalTime().toString(Qt::RFC2822Date);
+
+            output += QString("Last heard: %1\n").arg(lastHeard);
+
+            QString score;
+            if (!hashData.scoreReceived)
+                score = "unknown";
+            else if (hashData.scorePermillage < 0)
+                score = "N/A";
+            else
+                score = QString::number(hashData.scorePermillage / 10.0, 'f', 1);
+
+            output += QString("Score: %1").arg(score);
+
+            return output;
+        }
+    }
+
     void TrackStatsCommand::run(ServerInterface* serverInterface)
     {
-        auto hashId = serverInterface->hashIdRepository()->getOrRegisterId(_hash);
+        auto userId = serverInterface->userLoggedInId();
+        auto username = serverInterface->userLoggedInName();
+
+        serverInterface->collectionWatcher()
+            .convertTrackHashToLocalId(_hash)
+            .handleOnEventLoop(
+                this,
+                [this](ResultOrError<LocalHashId, AnyResultMessageCode> result)
+                {
+                    if (result.failed())
+                    {
+                        setCommandExecutionResult(result.error());
+                        return;
+                    }
+
+                    _localTrackId = result.result();
+                    listenerSlot();
+                }
+            );
 
         auto userDataFetcher = &serverInterface->userDataFetcher();
 
         connect(userDataFetcher, &UserDataFetcher::dataReceivedForUser,
                 this, &TrackStatsCommand::listenerSlot);
 
-        auto userId = serverInterface->userLoggedInId();
-        auto username = serverInterface->userLoggedInName();
-
         addStep(
-            [this, userDataFetcher, userId, username, hashId]() -> StepResult
+            [this, userDataFetcher, userId, username]() -> StepResult
             {
-                auto* hashData = userDataFetcher->getHashDataForUser(userId, hashId);
+                if (_localTrackId.isNull())
+                    return StepResult::stepIncomplete();
+
+                auto* hashData =
+                    userDataFetcher->getHashDataForUser(userId, _localTrackId.value());
+
                 if (hashData == nullptr)
                     return StepResult::stepIncomplete();
 
-                QString output;
-                output.reserve(100);
-
-                output += QString("Hash: %1\n").arg(_hash.toString());
-                output += QString("User: %1\n").arg(username);
-
-                QString lastHeard;
-                if (!hashData->previouslyHeardReceived)
-                    lastHeard = "unknown";
-                else if (hashData->previouslyHeard.isNull())
-                    lastHeard = "never";
-                else
-                    lastHeard =
-                        hashData->previouslyHeard.toLocalTime().toString(Qt::RFC2822Date);
-
-                output += QString("Last heard: %1\n").arg(lastHeard);
-
-                QString score;
-                if (!hashData->scoreReceived)
-                    score = "unknown";
-                else if (hashData->scorePermillage < 0)
-                    score = "N/A";
-                else
-                    score = QString::number(hashData->scorePermillage / 10.0, 'f', 1);
-
-                output += QString("Score: %1").arg(score);
-
+                auto output = generateTrackStatsOutputText(_hash, username, *hashData);
                 return StepResult::commandSuccessful(output);
             }
         );
