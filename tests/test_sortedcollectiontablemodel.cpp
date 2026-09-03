@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2023-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -557,6 +557,34 @@ QHash<LocalHashId, CollectionTrackInfo> CollectionWatcherMock::getCollection()
     return _collection;
 }
 
+Future<LocalHashId, AnyResultMessageCode>
+    CollectionWatcherMock::convertTrackHashToLocalId(const FileHash& hash)
+{
+    Q_UNUSED(hash)
+    NOT_IMPLEMENTED
+}
+
+Future<FileHash, AnyResultMessageCode> CollectionWatcherMock::convertLocalTrackIdToHash(
+    LocalHashId localId)
+{
+    Q_UNUSED(localId)
+    NOT_IMPLEMENTED
+}
+
+Nullable<LocalHashId> CollectionWatcherMock::tryConvertTrackHashToLocalId(
+    const FileHash& hash)
+{
+    Q_UNUSED(hash)
+    NOT_IMPLEMENTED
+}
+
+Nullable<FileHash> CollectionWatcherMock::tryConvertLocalTrackIdToHash(
+    LocalHashId localId)
+{
+    Q_UNUSED(localId)
+    NOT_IMPLEMENTED
+}
+
 Nullable<CollectionTrackInfo> CollectionWatcherMock::getTrackFromCache(LocalHashId hashId)
 {
     Q_UNUSED(hashId)
@@ -580,7 +608,6 @@ Future<CollectionTrackInfo, AnyResultMessageCode> CollectionWatcherMock::getTrac
 /* =========== */
 
 ServerInterfaceMock::ServerInterfaceMock()
-    : _localHashIdRepository(new LocalHashIdRepository())
 {
     //
 }
@@ -603,11 +630,6 @@ void ServerInterfaceMock::setCollectionWatcher(CollectionWatcher* collectionWatc
 void ServerInterfaceMock::setCurrentTrackMonitor(CurrentTrackMonitor* currentTrackMonitor)
 {
     _currentTrackMonitor = currentTrackMonitor;
-}
-
-PMP::Client::LocalHashIdRepository* ServerInterfaceMock::hashIdRepository() const
-{
-    return _localHashIdRepository;
 }
 
 AuthenticationController& ServerInterfaceMock::authenticationController()

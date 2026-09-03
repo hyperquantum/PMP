@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2025-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -41,7 +41,6 @@ namespace Ui
 namespace PMP::Client
 {
     class CollectionWatcher;
-    class LocalHashIdRepository;
     class QueueHashesMonitor;
     class ServerInterface;
 }
@@ -88,7 +87,6 @@ namespace PMP
         void markRowAsChanged(int index);
 
         Client::ServerInterface* _serverInterface;
-        Client::LocalHashIdRepository* _hashIdRepository;
         Client::CollectionWatcher* _collectionWatcher;
         Client::QueueHashesMonitor* _queueHashesMonitor;
         Client::LocalHashId _nowPlayingTrackHash;

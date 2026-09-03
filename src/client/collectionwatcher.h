@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -44,6 +44,15 @@ namespace PMP::Client
         virtual bool downloadingInProgress() const = 0;
 
         virtual QHash<LocalHashId, CollectionTrackInfo> getCollection() = 0;
+
+        virtual Future<LocalHashId, AnyResultMessageCode> convertTrackHashToLocalId(
+                                                                FileHash const& hash) = 0;
+        virtual Future<FileHash, AnyResultMessageCode> convertLocalTrackIdToHash(
+                                                                LocalHashId localId) = 0;
+        virtual Nullable<LocalHashId> tryConvertTrackHashToLocalId(
+                                                                FileHash const& hash) = 0;
+        virtual Nullable<FileHash> tryConvertLocalTrackIdToHash(LocalHashId localId) = 0;
+
         virtual Nullable<CollectionTrackInfo> getTrackFromCache(LocalHashId hashId) = 0;
         virtual Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
                                                                 LocalHashId hashId) = 0;

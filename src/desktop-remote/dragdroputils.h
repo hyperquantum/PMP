@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2025-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,6 +21,7 @@
 #define PMP_DRAGDROPUTILS_H
 
 #include "common/filehash.h"
+#include "common/nullable.h"
 
 #include <QAbstractItemModel>
 #include <QList>
@@ -31,8 +32,9 @@ QT_FORWARD_DECLARE_CLASS(QMimeData)
 
 namespace PMP::DragDropUtils
 {
-    QList<FileHash> getHashes(const QModelIndexList& indexes,
-                              std::function<FileHash(QModelIndex)> indexToHashConversion);
+    Nullable<QList<FileHash>> tryGetHashes(
+            const QModelIndexList& indexes,
+            std::function<Nullable<FileHash> (QModelIndex)> indexToHashConversion);
 
     QMimeData* convertHashesToMimeData(const QList<FileHash>& hashes);
 }

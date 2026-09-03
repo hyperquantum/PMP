@@ -1,0 +1,4 @@
+
+- collection search by file hash
+-
+-

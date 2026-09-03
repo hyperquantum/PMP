@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,6 +21,9 @@
 #define PMP_MISCELLANEOUSCOMMANDS_H
 
 #include "common/filehash.h"
+#include "common/nullable.h"
+
+#include "client/localhashid.h"
 
 #include "commandbase.h"
 
@@ -129,6 +132,7 @@ namespace PMP
 
     private:
         FileHash _hash;
+        Nullable<Client::LocalHashId> _localTrackId;
     };
 }
 #endif

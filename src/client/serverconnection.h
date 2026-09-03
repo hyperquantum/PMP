@@ -95,6 +95,8 @@ namespace PMP::Client
         class DuplicationResultHandler;
         class HistoryFragmentResultHandler;
         class HashInfoResultHandler;
+        class TrackInfoResultHandler;
+        class HashToServerIdResultHandler;
 
     public:
         explicit ServerConnection(QObject* parent,
@@ -103,8 +105,6 @@ namespace PMP::Client
                                   ServerEventSubscription eventSubscription =
                                                       ServerEventSubscription::AllEvents);
         ~ServerConnection();
-
-        LocalHashIdRepository* hashIdRepository() const { return _hashIdRepository; }
 
         void connectToHost(QString const& host, quint16 port);
         void disconnect();
@@ -134,10 +134,19 @@ namespace PMP::Client
         RequestID insertSpecialQueueItemAtIndex(SpecialQueueItemType itemType, int index,
                                        QueueIndexType indexType = QueueIndexType::Normal);
         RequestID duplicateQueueEntry(uint queueID);
+
+        Future<LocalHashId, AnyResultMessageCode> convertTrackHashToLocalId(
+                                                                    FileHash const& hash);
+        Future<FileHash, AnyResultMessageCode> convertLocalTrackIdToHash(
+                                                                    LocalHashId localId);
+        Nullable<LocalHashId> tryConvertTrackHashToLocalId(FileHash const& hash);
+        Nullable<FileHash> tryConvertLocalTrackIdToHash(LocalHashId localId);
+
         Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
                                                                     LocalHashId hashId);
         Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
-                                                                    FileHash const& hash);
+                                                                    TrackHashOrId track);
+
         Future<HistoryFragment, AnyResultMessageCode> getPersonalTrackHistory(
                                                         LocalHashId hashId, uint userId,
                                                         int limit, uint startId = 0);
@@ -190,11 +199,15 @@ namespace PMP::Client
 
         void sendQueueEntryHashRequest(QList<uint> const& queueIDs);
 
-        void sendHashUserDataRequest(quint32 userId, QList<LocalHashId> const& hashes);
+        void sendHashUserDataRequest(quint32 userId, QList<LocalHashId> const& tracks);
         Future<CollectionTrackInfo, AnyResultMessageCode> sendHashInfoRequest(
-                                                                    const FileHash& hash);
+                                                                    TrackHashOrId track);
+        Future<CollectionTrackInfo, AnyResultMessageCode> sendHashInfoRequest(
+                                                                    FileHash const& hash);
+        Future<CollectionTrackInfo, AnyResultMessageCode> sendTrackInfoRequest(
+                                                                    TrackServerId track);
         Future<HistoryFragment, AnyResultMessageCode> sendHashHistoryRequest(
-                                                        LocalHashId hashId, uint userId,
+                                                        LocalHashId trackId, uint userId,
                                                         int limit, uint startId);
 
         void sendPossibleFilenamesRequest(uint queueID);
@@ -354,6 +367,9 @@ namespace PMP::Client
                                                             QString username,
                                                             QString password);
 
+        Future<TrackServerId, AnyResultMessageCode> sendTrackServerIdRequest(
+                                                                    FileHash const& hash);
+
         void onFullIndexationRunningStatusReceived(bool running);
 
         void parseKeepAliveMessage(QByteArray const& message);
@@ -399,7 +415,9 @@ namespace PMP::Client
                                         ServerMessageType messageType);
 
         void parseHashUserDataMessage(QByteArray const& message);
+        void parseTrackServerIdMessage(QByteArray const& message);
         void parseHashInfoReply(QByteArray const& message);
+        void parseTrackInfoReply(QByteArray const& message);
         void parseHistoryFragmentMessage(QByteArray const& message);
         void parseNewHistoryEntryMessage(QByteArray const& message);
         void parsePlayerHistoryMessage(QByteArray const& message);

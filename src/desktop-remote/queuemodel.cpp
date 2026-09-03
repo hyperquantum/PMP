@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2014-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,8 +23,8 @@
 #include "common/unicodechars.h"
 #include "common/util.h"
 
+#include "client/collectionwatcher.h"
 #include "client/generalcontroller.h"
-#include "client/localhashidrepository.h"
 #include "client/queueentryinfostorage.h"
 #include "client/serverinterface.h"
 #include "client/userdatafetcher.h"
@@ -175,7 +175,7 @@ namespace PMP
                            QueueMediator* source, QueueEntryInfoStorage* trackInfoStorage,
                            UserForStatisticsDisplay* userForStats)
      : QAbstractTableModel(parent),
-       _hashIdRepository(serverInterface->hashIdRepository()),
+       _collectionWatcher(&serverInterface->collectionWatcher()),
        _userDataFetcher(&serverInterface->userDataFetcher()),
        _source(source),
        _infoStorage(trackInfoStorage),
@@ -635,15 +635,19 @@ namespace PMP
         if (hash.isNull())
             return false;
 
-        auto hashId = _hashIdRepository->getOrRegisterId(hash);
+        auto localIdOrNull = _collectionWatcher->tryConvertTrackHashToLocalId(hash);
+        if (localIdOrNull == null)
+            return false;
+
+        auto localId = localIdOrNull.value();
 
         int newIndex = (row < 0) ? _modelRows : row;
 
         qDebug() << " inserting at index" << newIndex
-                 << " hash ID" << hashId
+                 << " local ID" << localId
                  << " hash:" << hash.toString();
 
-        _source->insertFileAsync(newIndex, hashId);
+        _source->insertFileAsync(newIndex, localId);
         return true;
     }
 

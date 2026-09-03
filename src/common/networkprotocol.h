@@ -65,6 +65,7 @@ Changes for each version:
   26: parameterless actions 60 & 61, server msg 37: full indexation and quick scan for new files
   27: client msg 28, server msg 38: requesting individual track info
   28: client msgs 15 & 16 & 19, server msgs 18 & 19 & 21 & 36 & 38, error code 27 : server track IDs
+  29: client msgs 18 & 27 & 29 & 30, server msgs 22 & 29 & 39 & 40 : full switch to server-side track IDs
 */
 
 namespace PMP
@@ -114,6 +115,8 @@ namespace PMP
         HistoryFragmentMessage = 36,
         IndexationStatusMessage = 37,
         HashInfoReply = 38,
+        TrackServerIdMessage = 39,
+        TrackInfoReply = 40,
     };
 
     enum class ScrobblingServerMessageType : quint8
@@ -140,11 +143,11 @@ namespace PMP
         InitiateLoginMessage = 12,
         FinishLoginMessage = 13,
         CollectionFetchRequestMessage = 14,
-        AddHashToEndOfQueueRequestMessage = 15,
-        AddHashToFrontOfQueueRequestMessage = 16,
+        AddTrackToEndOfQueueRequestMessage = 15,
+        AddTrackToFrontOfQueueRequestMessage = 16,
         BulkQueueEntryHashRequestMessage = 17,
-        HashUserDataRequestMessage = 18,
-        InsertHashIntoQueueRequestMessage = 19,
+        TrackUserDataRequestMessage = 18,
+        InsertTrackIntoQueueRequestMessage = 19,
         PlayerHistoryRequestMessage = 20,
         QueueEntryDuplicationRequestMessage = 21,
         ClientExtensionsMessage = 22,
@@ -154,6 +157,8 @@ namespace PMP
         ActivateDelayedStartRequest = 26,
         PersonalHistoryRequest = 27,
         HashInfoRequest = 28,
+        TrackServerIdRequest = 29,
+        TrackInfoRequest = 30,
     };
 
     enum class ScrobblingClientMessageType : quint8

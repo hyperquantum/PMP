@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2025-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -31,6 +31,7 @@
 
 namespace PMP::Client
 {
+    /*! Contains either a track hash, a server-side track ID, or nothing. */
     class TrackHashOrId
     {
     public:
@@ -126,7 +127,7 @@ namespace PMP::Client
         else if (track.isHash())
             debug << track.toHash().value();
         else //if (track.isId())
-            debug << "{ID" << track.toId().value() << "}";
+            debug << "{SID" << track.toId().value() << "}";
 
         return debug;
     }

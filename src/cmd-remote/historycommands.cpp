@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2023-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,8 +21,8 @@
 
 #include "common/util.h"
 
+#include "client/collectionwatcher.h"
 #include "client/historycontroller.h"
-#include "client/localhashidrepository.h"
 #include "client/queueentryinfostorage.h"
 #include "client/serverinterface.h"
 
@@ -160,11 +160,26 @@ namespace PMP
     void TrackHistoryCommand::run(Client::ServerInterface* serverInterface)
     {
         auto userId = serverInterface->userLoggedInId();
-        auto hashId = serverInterface->hashIdRepository()->getOrRegisterId(_hash);
 
         auto future =
-            serverInterface->historyController().getPersonalTrackHistory(hashId, userId,
-                                                                         _fetchLimit);
+            serverInterface->collectionWatcher().convertTrackHashToLocalId(_hash)
+                .thenOnEventLoopIndirect<HistoryFragment, AnyResultMessageCode>(
+                    serverInterface,
+                    [serverInterface, userId](
+                        ResultOrError<LocalHashId, AnyResultMessageCode> outcome)
+                        -> Future<HistoryFragment, AnyResultMessageCode>
+                    {
+                        if (outcome.failed())
+                            return FutureError(outcome.error());
+
+                        auto localTrackId = outcome.result();
+
+                        return
+                            serverInterface->historyController().getPersonalTrackHistory(
+                                localTrackId, userId, _fetchLimit
+                            );
+                    }
+                );
 
         handleFailureAndResult<HistoryFragment>(
             future,
