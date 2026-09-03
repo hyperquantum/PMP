@@ -108,6 +108,7 @@ set(PMP_CLIENT_HEADERS
     client/serverconnection.h
     client/serverdiscoverer.h
     client/serverinterface.h
+    client/trackidslistfetcher.h
     client/tracklabelscontroller.h
     client/userdatafetcher.h
     client/volumemediator.h

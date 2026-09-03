@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2014-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -60,6 +60,7 @@ namespace PMP::Client
     class LocalHashIdRepository;
     class ServerCapabilities;
     class ServerCapabilitiesImpl;
+    class TrackIdsListFetcher;
     class TrackServerIdRepository;
 
     enum class ServerEventSubscription
@@ -90,6 +91,7 @@ namespace PMP::Client
         class ParameterlessActionResultHandler;
         class ScrobblingAuthenticationResultHandler;
         class CollectionFetchResultHandler;
+        class TrackIdsListFetcherResultHandler;
         class TrackInsertionResultHandler;
         class QueueEntryInsertionResultHandler;
         class DuplicationResultHandler;
@@ -152,6 +154,7 @@ namespace PMP::Client
         Future<QHash<quint32, QString>, AnyResultMessageCode> getLabelNames(
                                                                 QList<quint32> labelIds);
         Future<QList<quint32>, AnyResultMessageCode> getActiveLabels();
+        void fetchTracksHavingLabel(quint32 labelId, TrackIdsListFetcher* fetcher);
 
         SimpleFuture<AnyResultMessageCode> authenticateScrobbling(
                                                             ScrobblingProvider provider,
@@ -420,6 +423,7 @@ namespace PMP::Client
         void parseTrackLabelsChangeMessage(QByteArray const& message);
         void parseLabelNamesReply(QByteArray const& message);
         void parseActiveLabelsReply(QByteArray const& message);
+        void parseLabelTracksResponseMessage(QByteArray const& message);
         void parseHistoryFragmentMessage(QByteArray const& message);
         void parseNewHistoryEntryMessage(QByteArray const& message);
         void parsePlayerHistoryMessage(QByteArray const& message);
@@ -465,6 +469,7 @@ namespace PMP::Client
         TriBool _doingQuickScanForNewFiles;
         QHash<uint, QSharedPointer<ResultHandler>> _resultHandlers;
         QHash<uint, CollectionFetcher*> _collectionFetchers;
+        QHash<uint, TrackIdsListFetcher*> _trackIdsListFetchers;
         ServerHealthStatus _serverHealthStatus;
     };
 }

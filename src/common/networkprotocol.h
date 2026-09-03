@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2015-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -65,7 +65,7 @@ Changes for each version:
   26: parameterless actions 60 & 61, server msg 37: full indexation and quick scan for new files
   27: client msg 28, server msg 38: requesting individual track info
   28: client msgs 15 & 16 & 19, server msgs 18 & 19 & 21 & 36 & 38, error code 27 : server track IDs
-  29: client msgs 29 & 30, server msgs 39 & 40 & 41, error codes 27 & 28 & 122 & 243 .... : labels
+  29: client msgs 29-34, server msgs 39-43, error codes 27 & 28 & 122 & 243 : labels
 */
 
 namespace PMP
@@ -119,6 +119,7 @@ namespace PMP
         LabelNamesReply = 40,
         TrackLabelsChangeMessage = 41,
         ActiveLabelsReply = 42,
+        LabelTracksResponseMessage = 43,
     };
 
     enum class ScrobblingServerMessageType : quint8
@@ -164,6 +165,7 @@ namespace PMP
         TrackLabelsListRequest = 31,
         LabelNamesRequest = 32,
         ActiveLabelsRequest = 33,
+        LabelTracksFetchRequest = 34,
     };
 
     enum class ScrobblingClientMessageType : quint8

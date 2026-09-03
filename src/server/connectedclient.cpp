@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2014-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,6 +19,7 @@
 
 #include "connectedclient.h"
 
+#include "common/containerutil.h"
 #include "common/filehash.h"
 #include "common/networkprotocol.h"
 #include "common/networkutil.h"
@@ -2008,6 +2009,35 @@ namespace PMP::Server
         sendBinaryMessage(message);
     }
 
+    void ConnectedClient::sendLabelTracksResponse(quint32 clientReference,
+                                                  QList<uint> trackIds)
+    {
+        auto tracksCount = trackIds.size();
+
+        // We cannot split this message automatically, but this should not happen in
+        // practice anyway.
+        if (tracksCount > std::numeric_limits<qint16>::max())
+        {
+            sendResultMessage(ResultMessageErrorCode::TooMuchDataToReturn,
+                              clientReference);
+            return;
+        }
+
+        QByteArray message;
+        message.reserve(2 + 2 + 4 + tracksCount * 8);
+        NetworkProtocol::append2Bytes(message,
+                                      ServerMessageType::LabelTracksResponseMessage);
+        NetworkUtil::append2BytesUnsigned(message, tracksCount);
+        NetworkUtil::append4Bytes(message, clientReference);
+
+        for (auto trackId : trackIds)
+        {
+            NetworkUtil::append8Bytes(message, trackId);
+        }
+
+        sendBinaryMessage(message);
+    }
+
     void ConnectedClient::sendSuccessMessage(quint32 clientReference, quint32 intData)
     {
         sendResultMessage(ResultMessageErrorCode::NoError, clientReference, intData);
@@ -2604,6 +2634,9 @@ namespace PMP::Server
             return;
         case ClientMessageType::ActiveLabelsRequest:
             parseActiveLabelsRequest(message);
+            return;
+        case ClientMessageType::LabelTracksFetchRequest:
+            parseLabelTracksFetchRequest(message);
             return;
         case ClientMessageType::None:
             qDebug() << "received a message with type 'none' and length"
@@ -3675,6 +3708,45 @@ namespace PMP::Server
         sendActiveLabelsReply(clientReference, result.result());
     }
 
+    void ConnectedClient::parseLabelTracksFetchRequest(const QByteArray& message)
+    {
+        if (message.length() != 12)
+            return; /* invalid message */
+
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+        quint32 labelId = NetworkUtil::get4Bytes(message, 8);
+
+        qDebug() << "received fetch request for all tracks connected to label" << labelId
+                 << "; client ref:" << clientReference;
+
+        auto trackIdsOrError = _serverInterface->getTracksWithLabel(labelId);
+
+        if (trackIdsOrError.failed())
+        {
+            sendResultMessage(trackIdsOrError.error(), clientReference);
+            return;
+        }
+
+        auto sender = new TrackIdsListSender(trackIdsOrError.result(), 250, this);
+
+        connect(
+            sender, &TrackIdsListSender::gotNextBatchToSend,
+            this,
+            [this, clientReference](auto trackIds)
+            {
+                sendLabelTracksResponse(clientReference, trackIds);
+            }
+        );
+        connect(
+            sender, &TrackIdsListSender::allSent,
+            this,
+            [this, clientReference]()
+            {
+                sendSuccessMessage(clientReference, 0);
+            }
+        );
+    }
+
     void ConnectedClient::handleSingleByteAction(quint8 action)
     {
         /* actions 100-200 represent a SET VOLUME command */
@@ -3874,7 +3946,7 @@ namespace PMP::Server
        _currentIndex(0)
     {
         _hashes = _resolver->getAllHashes();
-        qDebug() << "CollectionSender: starting.  Hash count:" << _hashes.size();
+        qDebug() << "CollectionSender: starting; track count:" << _hashes.size();
 
         QTimer::singleShot(0, this, &CollectionSender::sendNextBatch);
     }
@@ -3883,7 +3955,7 @@ namespace PMP::Server
     {
         if (_currentIndex >= _hashes.size())
         {
-            qDebug() << "CollectionSender: all completed.  ref=" << _clientRef;
+            qDebug() << "CollectionSender: all completed; ref=" << _clientRef;
             Q_EMIT allSent(_clientRef);
             return;
         }
@@ -3896,10 +3968,10 @@ namespace PMP::Server
 
         auto infoToSend = _resolver->getHashesTrackInfo(batch);
         qDebug() << "CollectionSender: have batch of" << infoToSend.size()
-                 << "to send.  ref=" << _clientRef;
+                 << "to send; ref=" << _clientRef;
 
         /* schedule next batch already */
-        QTimer::singleShot(100, this, &CollectionSender::sendNextBatch);
+        QTimer::singleShot(40, this, &CollectionSender::sendNextBatch);
 
         /* send this batch if it is not empty */
         if (!infoToSend.isEmpty())
@@ -3908,4 +3980,42 @@ namespace PMP::Server
         }
     }
 
+    /* ============================== TrackIdsListSender ============================== */
+
+    TrackIdsListSender::TrackIdsListSender(QSet<uint> trackIds, qsizetype batchSize,
+                                           QObject* parent)
+     : QObject(parent),
+        _trackIds(ContainerUtil::toList(trackIds)),
+        _currentEndIndex(trackIds.size()),
+        _batchSize(batchSize)
+    {
+        qDebug() << "TrackIdsListSender: starting; track count:" << _trackIds.size();
+
+        QTimer::singleShot(0, this, &TrackIdsListSender::sendNextBatch);
+    }
+
+    void TrackIdsListSender::sendNextBatch()
+    {
+        if (_currentEndIndex <= 0)
+        {
+            qDebug() << "TrackIdsListSender: finished" ;
+
+            Q_EMIT allSent();
+            return;
+        }
+
+        auto startIndex = qMax(0, _currentEndIndex - _batchSize);
+
+        auto slice = _trackIds.sliced(startIndex, _currentEndIndex - startIndex);
+
+        _currentEndIndex = startIndex;
+
+        /* schedule next batch already */
+        QTimer::singleShot(40, this, &TrackIdsListSender::sendNextBatch);
+
+        qDebug() << "TrackIdsListSender: have batch of" << slice.size()
+                 << "track IDs to send";
+
+        Q_EMIT gotNextBatchToSend(slice);
+    }
 }

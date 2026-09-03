@@ -65,6 +65,7 @@ namespace PMP
     class TrackQueuePresenceCriterium;
     class TrackAvailabilityCriterium;
     class TrackMetaDataPresenceCriterium;
+    class TrackLabelPresenceCriterium;
     class CompositeTrackCriterium;
 
     class TrackCriteriumVisitor
@@ -82,6 +83,7 @@ namespace PMP
         virtual void visit(const TrackQueuePresenceCriterium&) = 0;
         virtual void visit(const TrackAvailabilityCriterium&) = 0;
         virtual void visit(const TrackMetaDataPresenceCriterium&) = 0;
+        virtual void visit(const TrackLabelPresenceCriterium&) = 0;
         virtual void visit(const CompositeTrackCriterium&) = 0;
     };
 
@@ -570,6 +572,59 @@ namespace PMP
         bool _present;
     };
 
+    class TrackLabelPresenceCriterium final : public TrackCriterium
+    {
+    public:
+        static std::unique_ptr<TrackLabelPresenceCriterium> labelMustBePresent(
+            quint32 labelId)
+        {
+            return std::unique_ptr<TrackLabelPresenceCriterium>(
+                new TrackLabelPresenceCriterium(labelId, true)
+            );
+        }
+
+        static std::unique_ptr<TrackLabelPresenceCriterium> labelMustBeAbsent(
+            quint32 labelId)
+        {
+            return std::unique_ptr<TrackLabelPresenceCriterium>(
+                new TrackLabelPresenceCriterium(labelId, false)
+            );
+        }
+
+        quint32 labelId() const { return _labelId; }
+        bool presence() const { return _present; }
+
+        std::unique_ptr<TrackCriterium> clone() const override
+        {
+            return std::make_unique<TrackLabelPresenceCriterium>(*this);
+        }
+
+        void accept(TrackCriteriumVisitor& visitor) const override
+        {
+            visitor.visit(*this);
+        }
+
+        bool usesUserData() const override { return false; }
+
+    protected:
+        bool equalsImpl(const TrackCriterium& other) const override
+        {
+            auto* o = dynamic_cast<const TrackLabelPresenceCriterium*>(&other);
+
+            return o && _labelId == o->_labelId && _present == o->_present;
+        }
+
+    private:
+        explicit TrackLabelPresenceCriterium(quint32 labelId, bool present)
+            : _labelId(labelId), _present(present)
+        {
+            //
+        }
+
+        quint32 _labelId;
+        bool _present;
+    };
+
     class CompositeTrackCriterium : public TrackCriterium
     {
     public:
@@ -683,6 +738,16 @@ namespace PMP
         static std::unique_ptr<TrackCriterium> heardAtLeastOnce()
         {
             return TrackLastHeardPresenceCriterium::lastHeardMustBePresent();
+        }
+
+        static std::unique_ptr<TrackCriterium> hasLabel(quint32 labelId)
+        {
+            return TrackLabelPresenceCriterium::labelMustBePresent(labelId);
+        }
+
+        static std::unique_ptr<TrackCriterium> lacksLabel(quint32 labelId)
+        {
+            return TrackLabelPresenceCriterium::labelMustBeAbsent(labelId);
         }
 
         static std::unique_ptr<TrackCriterium> inTheQueue()

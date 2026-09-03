@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2025-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -38,12 +38,16 @@ namespace PMP::Server
         Q_OBJECT
     public:
         explicit Labels(QObject* parent);
+
         SimpleFuture<Result> applyLabelToTrack(uint trackHashId, QString const& label);
         SimpleFuture<Result> removeLabelFromTrack(uint trackHashId, QString const& label);
+
+        bool checkLabelExists(quint32 labelId);
         QList<quint32> getLabelsInActiveUse();
         QList<quint32> getLabelsOfTrack(uint trackHashId);
         ResultOrError<QHash<quint32, QString>, Error> getLabelNames(
                                                                 QList<quint32> labelIds);
+        QSet<uint> getTracksWithLabel(quint32 labelId);
 
         static bool isValidPotentialName(QString const& name);
 

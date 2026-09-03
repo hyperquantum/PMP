@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2025-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -140,6 +140,13 @@ namespace PMP::Server
         return future;
     }
 
+    bool Labels::checkLabelExists(quint32 labelId)
+    {
+        QMutexLocker lock(&_mutex);
+
+        return _labelDataByLabelId.contains(labelId);
+    }
+
     QList<quint32> Labels::getLabelsInActiveUse()
     {
         QMutexLocker lock(&_mutex);
@@ -182,6 +189,19 @@ namespace PMP::Server
             result.insert(labelId, it.value().name);
         }
 
+        return result;
+    }
+
+    QSet<uint> Labels::getTracksWithLabel(quint32 labelId)
+    {
+        QMutexLocker lock(&_mutex);
+
+        auto it = _labelDataByLabelId.constFind(labelId);
+        if (it == _labelDataByLabelId.constEnd())
+            return {}; // label not found, empty result
+
+        auto result = it.value().hashes;
+        result.detach(); // make a copy for thread safety
         return result;
     }
 

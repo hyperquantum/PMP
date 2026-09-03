@@ -45,11 +45,15 @@ namespace PMP::Client
         SimpleFuture<AnyResultMessageCode> removeLabelFromTrack(LocalHashId hashId,
                                                                 QString label) override;
 
+        TriBool tryCheckIfTrackHasLabel(LocalHashId hashId, quint32 labelId) override;
         Future<QList<QString>, AnyResultMessageCode> getLabelNamesByTrack(
             LocalHashId hashId) override;
         Future<QList<LabelIdAndName>, AnyResultMessageCode> getLabelsByTrack(
             LocalHashId hashId) override;
 
+        void ensureFetchingOfTracksForLabel(quint32 labelId) override;
+
+        Nullable<QString> tryGetLabelNameById(quint32 labelId) override;
         Future<QHash<quint32,QString>, AnyResultMessageCode> getLabelNamesByIds(
             QList<quint32> labelIds) override;
 
@@ -65,6 +69,7 @@ namespace PMP::Client
         {
             Nullable<Future<QSet<quint32>, AnyResultMessageCode>> futureForFetching;
             QSet<quint32> labelIds;
+            QSet<quint32> labelsRemovedIds;
             bool fetched { false };
         };
 
@@ -73,7 +78,14 @@ namespace PMP::Client
             QString name;
             QSet<LocalHashId> hashes;
             bool hashesFetched { false };
+            bool fetchRequestSent { false };
+            bool fetchResultWillBeIncomplete { false };
         };
+
+        void ensureFetchingOfTracksForLabelInternal(quint32 labelId);
+        QList<LocalHashId> tryConvertServerIdsToLocalIds(QList<quint64> trackIds,
+                                                         bool& ok);
+        void receivedTracksForLabelChunk(quint32 labelId, QList<LocalHashId> hashes);
 
         Future<QSet<quint32>, AnyResultMessageCode> getLabelsByTrackInternal(
             LocalHashId hashId);

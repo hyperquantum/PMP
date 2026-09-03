@@ -24,6 +24,7 @@
 
 #include "client/collectionwatcher.h"
 #include "client/currenttrackmonitor.h"
+#include "client/labelscontroller.h"
 #include "client/localhashidrepository.h"
 #include "client/playercontroller.h"
 #include "client/queuehashesmonitor.h"
@@ -102,7 +103,9 @@ namespace PMP
        _highlightColorIndex(0),
        _sortBy(0),
        _sortOrder(Qt::AscendingOrder),
-       _highlightingTrackJudge(serverInterface->userDataFetcher(), *queueHashesMonitor),
+       _highlightingTrackJudge(serverInterface->userDataFetcher(),
+                               serverInterface->labelsController(),
+                               *queueHashesMonitor),
        _queueHashesMonitor(queueHashesMonitor)
     {
         _collator.setCaseSensitivity(Qt::CaseInsensitive);
@@ -178,6 +181,12 @@ namespace PMP
 
         connect(_queueHashesMonitor, &QueueHashesMonitor::hashInQueuePresenceChanged,
                 this, &SortedCollectionTableModel::onHashInQueuePresenceChanged);
+
+        auto& labelsController = serverInterface->labelsController();
+        connect(
+            &labelsController, &LabelsController::trackLabelsChanged,
+            this, &SortedCollectionTableModel::onTrackLabelsChanged
+        );
 
         addWhenModelEmpty(collectionWatcher.getCollection().values());
     }
@@ -428,6 +437,17 @@ namespace PMP
 
         Q_EMIT dataChanged(createIndex(outerIndex, 0),
                            createIndex(outerIndex, 0));
+    }
+
+    void SortedCollectionTableModel::onTrackLabelsChanged(LocalHashId hashId)
+    {
+        qDebug() << "SortedCollectionTableModel: labels changed for track" << hashId;
+
+        auto outerIndex = findOuterIndexForHash(hashId);
+        if (outerIndex < 0)
+            return; /* track is not in the list */
+
+        markRowAsChanged(outerIndex);
     }
 
     int SortedCollectionTableModel::findOuterIndexMapIndexForInsert(
@@ -906,7 +926,9 @@ namespace PMP
      : _serverInterface(serverInterface),
        _source(source),
        _searchData(searchData),
-       _filteringTrackJudge(serverInterface->userDataFetcher(), *queueHashesMonitor)
+       _filteringTrackJudge(serverInterface->userDataFetcher(),
+                            serverInterface->labelsController(),
+                            *queueHashesMonitor)
     {
         Q_UNUSED(parent)
         setFilterCaseSensitivity(Qt::CaseInsensitive);

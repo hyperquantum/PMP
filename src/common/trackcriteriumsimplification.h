@@ -39,6 +39,7 @@ namespace PMP
         void visit(const TrackQueuePresenceCriterium&) override;
         void visit(const TrackAvailabilityCriterium&) override;
         void visit(const TrackMetaDataPresenceCriterium&) override;
+        void visit(const TrackLabelPresenceCriterium&) override;
         void visit(const CompositeTrackCriterium&) override;
 
     private:

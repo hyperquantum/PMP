@@ -1,4 +1,4 @@
-# TODO's for labels
+﻿# TODO's for labels
 
 This file lists the TODO's regarding labels that I plan to implement in the
 current branch. This branch will be limited to the basics: adding, removing,
@@ -19,8 +19,8 @@ this branch.
 * track info dialog: adding a single label to a track ✓
 * track info dialog: removing a single label from a track ✓
 * track info dialog: provide a list of existing labels to make adding a label easier ✓
-* music collection view: new filter "has label XYZ"
-* music collection view: new filter "does not have label XYZ"
+* music collection view: new filter "has label XYZ" ✓
+* music collection view: new filter "does not have label XYZ" ✓
 * music collection view: new filter "has any label(s)"
 * music collection view: new filter "does not have labels"
 * music collection view: adding a label to an entire list of tracks

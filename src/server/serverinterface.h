@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2020-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -165,6 +165,7 @@ namespace PMP::Server
         ResultOrError<QHash<quint32, QString>, Error> getLabelNames(
                                                                 QList<quint32> labelIds);
         ResultOrError<QList<quint32>, Error> getActiveLabels();
+        ResultOrError<QSet<uint>, Error> getTracksWithLabel(quint32 labelId);
 
         void shutDownServer();
         void shutDownServer(QString serverPassword);

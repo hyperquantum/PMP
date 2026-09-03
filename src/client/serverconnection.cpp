@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2014-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -29,6 +29,7 @@
 #include "inactivitytimer.h"
 #include "localhashidrepository.h"
 #include "servercapabilitiesimpl.h"
+#include "trackidslistfetcher.h"
 #include "trackserveridrepository.h"
 
 #include <QtDebug>
@@ -449,6 +450,46 @@ namespace PMP::Client
         else
         {
             qWarning() << "CollectionFetchResultHandler:" << errorDescription(data);
+            Q_EMIT _fetcher->errorOccurred();
+        }
+
+        _fetcher->deleteLater();
+    }
+
+    /* ============================================================================ */
+
+    class ServerConnection::TrackIdsListFetcherResultHandler : public ResultHandler
+    {
+    public:
+        TrackIdsListFetcherResultHandler(ServerConnection* parent,
+                                         TrackIdsListFetcher* fetcher);
+
+        void handleResult(ResultMessageData const& data) override;
+
+    private:
+        TrackIdsListFetcher* _fetcher;
+    };
+
+    ServerConnection::TrackIdsListFetcherResultHandler::TrackIdsListFetcherResultHandler(
+        ServerConnection* parent,
+        TrackIdsListFetcher* fetcher)
+     : ResultHandler(parent), _fetcher(fetcher)
+    {
+        //
+    }
+
+    void ServerConnection::TrackIdsListFetcherResultHandler::handleResult(
+                                                            const ResultMessageData& data)
+    {
+        _parent->_trackIdsListFetchers.remove(data.clientReference);
+
+        if (data.isSuccess())
+        {
+            Q_EMIT _fetcher->completed();
+        }
+        else
+        {
+            qWarning() << "TrackIdsListFetcherResultHandler:" << errorDescription(data);
             Q_EMIT _fetcher->errorOccurred();
         }
 
@@ -1871,6 +1912,27 @@ namespace PMP::Client
         return handler->future();
     }
 
+    void ServerConnection::fetchTracksHavingLabel(quint32 labelId,
+                                                  TrackIdsListFetcher* fetcher)
+    {
+        fetcher->setParent(this);
+
+        auto handler =
+            QSharedPointer<TrackIdsListFetcherResultHandler>::create(this, fetcher);
+        auto fetcherReference = registerResultHandler(handler);
+        _trackIdsListFetchers[fetcherReference] = fetcher;
+
+        QByteArray message;
+        message.reserve(2 + 2 + 4 + 4);
+        NetworkProtocol::append2Bytes(message,
+                                      ClientMessageType::LabelTracksFetchRequest);
+        NetworkUtil::append2Bytes(message, 0); // filler
+        NetworkUtil::append4Bytes(message, fetcherReference);
+        NetworkUtil::append4Bytes(message, labelId);
+
+        sendBinaryMessage(message);
+    }
+
     void ServerConnection::sendQueueEntryInfoRequest(uint queueID)
     {
         if (queueID == 0) return;
@@ -2723,6 +2785,9 @@ namespace PMP::Client
             return;
         case ServerMessageType::ActiveLabelsReply:
             parseActiveLabelsReply(message);
+            return;
+        case ServerMessageType::LabelTracksResponseMessage:
+            parseLabelTracksResponseMessage(message);
             return;
         case ServerMessageType::HistoryFragmentMessage:
             parseHistoryFragmentMessage(message);
@@ -4354,6 +4419,39 @@ namespace PMP::Client
         {
             qWarning() << "result handler not for for reference:" << clientReference;
         }
+    }
+
+    void ServerConnection::parseLabelTracksResponseMessage(const QByteArray& message)
+    {
+        if (message.length() < 12)
+            return; /* invalid message */
+
+        int tracksCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+        int offset = 8;
+
+        QList<quint64> trackIds;
+        trackIds.reserve(tracksCount);
+
+        for (int i = 0; i < tracksCount; ++i)
+        {
+            auto trackId = NetworkUtil::get8Bytes(message, offset);
+            offset += 8;
+
+            trackIds.append(trackId);
+        }
+
+        auto trackIdsListFetcher = _trackIdsListFetchers.value(clientReference, nullptr);
+
+        if (!trackIdsListFetcher)
+        {
+            // something is wrong
+            qWarning() << "ServerConnection: handler not found for reference"
+                       << clientReference;
+            return;
+        }
+
+        trackIdsListFetcher->receivedIds(trackIds);
     }
 
     void ServerConnection::parseHistoryFragmentMessage(const QByteArray& message)

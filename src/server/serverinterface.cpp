@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2020-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -766,6 +766,18 @@ namespace PMP::Server
             return Error::notLoggedIn();
 
         return _labels->getLabelsInActiveUse();
+    }
+
+    ResultOrError<QSet<uint>, Error> ServerInterface::getTracksWithLabel(quint32 labelId)
+    {
+        /* require authentication for now, maybe we'll change this in the future */
+        if (!isLoggedIn())
+            return Error::notLoggedIn();
+
+        if (!_labels->checkLabelExists(labelId))
+            return Error::labelIdNotFound(labelId);
+
+        return _labels->getTracksWithLabel(labelId);
     }
 
     void ServerInterface::shutDownServer()

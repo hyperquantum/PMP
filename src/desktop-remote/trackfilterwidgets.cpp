@@ -23,6 +23,7 @@
 #include "common/unicodechars.h"
 #include "common/util.h"
 
+#include "client/labelscontroller.h"
 #include "client/serverinterface.h"
 
 #include "clickablelabel.h"
@@ -43,8 +44,9 @@ using namespace PMP::Client;
 
 namespace PMP
 {
-    FilterLabelWidget::FilterLabelWidget(QWidget *parent)
-     : QWidget(parent)
+    FilterLabelWidget::FilterLabelWidget(QWidget* parent,
+                                         ServerInterface* serverInterface)
+     : QWidget(parent), _serverInterface(serverInterface)
     {
         _label = new ClickableLabel();
         _label->setClickable(false);
@@ -74,7 +76,7 @@ namespace PMP
         bool isEditable = FilterEditorFactory::isEditable(*_criterium);
         _label->setClickable(isEditable);
 
-        CriteriumCaptionGenerator visitor;
+        CriteriumCaptionGenerator visitor(_serverInterface);
         _criterium->accept(visitor);
         auto caption = visitor.caption();
 
@@ -84,6 +86,13 @@ namespace PMP
     std::unique_ptr<TrackCriterium> FilterLabelWidget::createCriterium() const
     {
         return _criterium->clone();
+    }
+
+    FilterLabelWidget::CriteriumCaptionGenerator::CriteriumCaptionGenerator(
+                                                        ServerInterface* serverInterface)
+     : _serverInterface(serverInterface)
+    {
+        //
     }
 
     void FilterLabelWidget::CriteriumCaptionGenerator::visit(
@@ -320,6 +329,20 @@ namespace PMP
                 _caption = tr("no album");
             break;
         }
+    }
+
+    void FilterLabelWidget::CriteriumCaptionGenerator::visit(
+        const TrackLabelPresenceCriterium& criterium)
+    {
+        auto labelNameOrNull =
+            _serverInterface->labelsController().tryGetLabelNameById(criterium.labelId());
+
+        auto labelName = labelNameOrNull.valueOr("???");
+
+        if (criterium.presence())
+            _caption = tr("has label '%1'").arg(labelName);
+        else
+            _caption = tr("without label '%1'").arg(labelName);
     }
 
     void FilterLabelWidget::CriteriumCaptionGenerator::visit(
@@ -611,6 +634,33 @@ namespace PMP
                 [filter]()
                 {
                     filter->setFilterToCriterium(TrackCriteriumFactory::heardAtLeastOnce());
+                }
+            );
+
+            // Category: Labels
+            QMenu* labelsMenu = menu.addMenu(filtersMenuTr("Labels"));
+
+            labelsMenu->addAction(
+                filtersMenuTr("Has label ___"),
+                [filter, serverInterface]()
+                {
+                    auto* editor =
+                        new LabelPresenceEditorWidget(nullptr, serverInterface);
+                    editor->setInverted(false);
+
+                    filter->setFilterToEditor(editor);
+                }
+            );
+
+            labelsMenu->addAction(
+                filtersMenuTr("Without label ___"),
+                [filter, serverInterface]()
+                {
+                    auto* editor =
+                        new LabelPresenceEditorWidget(nullptr, serverInterface);
+                    editor->setInverted(true);
+
+                    filter->setFilterToEditor(editor);
                 }
             );
 
@@ -970,6 +1020,139 @@ namespace PMP
 
     // =============================================================== //
 
+    LabelPresenceEditorWidget::LabelPresenceEditorWidget(QWidget* parent,
+                                                         ServerInterface* serverInterface)
+     : FilterEditorWidget(parent),
+        _serverInterface(serverInterface)
+    {
+        _inversionComboBox = new QComboBox();
+        _labelComboBox = new QComboBox();
+
+        QHBoxLayout* layout = new QHBoxLayout(this);
+        layout->setContentsMargins(0, 0, 0, 0);
+        layout->addWidget(_inversionComboBox, 0);
+        layout->addWidget(_labelComboBox, 1);
+
+        _inversionComboBox->addItem(tr("has label"));
+        _inversionComboBox->addItem(tr("without label"));
+
+        _serverInterface->labelsController().getActiveLabels()
+            .handleOnEventLoop(
+                this,
+                [this](ResultOrError<QList<LabelIdAndName>, AnyResultMessageCode> outcome)
+                {
+                    if (outcome.failed())
+                    {
+                        qWarning() << "LabelPresenceEditorWidget: failed to load list of"
+                                      " active labels; error code:"
+                                   << errorCodeString(outcome.error());
+                        return;
+                    }
+
+                    _ignoreLabelComboBoxIndexChanges++;
+
+                    QString labelTextToSelect;
+                    for (auto label : outcome.result())
+                    {
+                        _labelIdsToNames[label.id()] = label.name();
+
+                        if (_labelIdToSelect > 0 && _labelIdToSelect == label.id())
+                            labelTextToSelect = label.name();
+
+                        _labelComboBox->addItem(label.name(), label.id());
+                    }
+
+                    _labelComboBox->model()->sort(0);
+                    _labelComboBox->setCurrentIndex(-1);
+
+                    if (!labelTextToSelect.isEmpty())
+                        _labelComboBox->setCurrentText(labelTextToSelect);
+
+                    _ignoreLabelComboBoxIndexChanges--;
+                    _labelsLoaded = true;
+                }
+            );
+
+        // TODO: add any extra label that is created after loading the list
+
+        connect(
+            _inversionComboBox, &QComboBox::currentIndexChanged,
+            this, &FilterEditorWidget::criteriumChanged
+        );
+
+        connect(
+            _labelComboBox, &QComboBox::currentIndexChanged,
+            this,
+            [this]()
+            {
+                if (_ignoreLabelComboBoxIndexChanges > 0)
+                    return;
+
+                quint32 newLabelId;
+                if (_labelComboBox->currentIndex() < 0)
+                {
+                    newLabelId = 0;
+                }
+                else
+                {
+                    QVariant data = _labelComboBox->currentData();
+                    newLabelId = data.toUInt();
+                }
+
+                if (newLabelId == _labelIdToSelect)
+                    return; // no change
+
+                _labelIdToSelect = newLabelId;
+                Q_EMIT criteriumChanged();
+            }
+        );
+    }
+
+    void LabelPresenceEditorWidget::setInverted(bool isInverted)
+    {
+        _inversionComboBox->setCurrentIndex(isInverted ? 1 : 0);
+    }
+
+    void LabelPresenceEditorWidget::setLabel(quint32 labelId)
+    {
+        if (_labelIdToSelect == labelId)
+            return;
+
+        _labelIdToSelect = labelId;
+
+        if (!_labelsLoaded)
+            return;
+
+        auto it = _labelIdsToNames.constFind(labelId);
+        Q_ASSERT_X(it != _labelIdsToNames.constEnd(),
+                   "LabelPresenceEditorWidget::setLabel",
+                   "label name not known for specified ID");
+
+        _labelComboBox->setCurrentText(it.value());
+
+        Q_EMIT criteriumChanged();
+    }
+
+    std::unique_ptr<TrackCriterium> LabelPresenceEditorWidget::createCriterium() const
+    {
+        if (_labelIdToSelect == 0)
+            return ConstantTrackCriterium::noTracksMatch();
+
+        auto inversionIndex = _inversionComboBox->currentIndex();
+
+        if (inversionIndex < 0)
+            return ConstantTrackCriterium::noTracksMatch();
+
+        bool isInverted = inversionIndex == 1;
+
+        if (isInverted)
+            return TrackCriteriumFactory::lacksLabel(_labelIdToSelect);
+
+        return TrackCriteriumFactory::hasLabel(_labelIdToSelect);
+    }
+
+    // =============================================================== //
+
     bool FilterEditorFactory::isEditable(const TrackCriterium& criterium)
     {
         IsEditableVisitor visitor;
@@ -1040,6 +1223,13 @@ namespace PMP
         const TrackMetaDataPresenceCriterium&)
     {
         _isEditable = false;
+    }
+
+
+    void FilterEditorFactory::IsEditableVisitor::visit(
+        const TrackLabelPresenceCriterium&)
+    {
+        _isEditable = true;
     }
 
     void FilterEditorFactory::IsEditableVisitor::visit(const CompositeTrackCriterium&)
@@ -1130,6 +1320,16 @@ namespace PMP
         const TrackMetaDataPresenceCriterium&)
     {
         _editorWidget = nullptr;
+    }
+
+    void FilterEditorFactory::EditorWidgetCreationVisitor::visit(
+        const TrackLabelPresenceCriterium& criterium)
+    {
+        auto editor = new LabelPresenceEditorWidget(_parent, _serverInterface);
+        editor->setInverted(criterium.presence() == false);
+        editor->setLabel(criterium.labelId());
+
+        _editorWidget = editor;
     }
 
     void FilterEditorFactory::EditorWidgetCreationVisitor::visit(
@@ -1396,7 +1596,7 @@ namespace PMP
 
         bool isEditable = FilterEditorFactory::isEditable(*criterium);
 
-        _labelWidget = new FilterLabelWidget(nullptr);
+        _labelWidget = new FilterLabelWidget(nullptr, _serverInterface);
         _labelWidget->setCriterium(std::move(criterium));
 
         connect(

@@ -79,6 +79,11 @@ namespace PMP
         _result = criterium.clone();
     }
 
+    void TrackCriteriumSimplifier::visit(const TrackLabelPresenceCriterium& criterium)
+    {
+        _result = criterium.clone();
+    }
+
     void TrackCriteriumSimplifier::visit(const CompositeTrackCriterium& criterium)
     {
         std::vector<std::unique_ptr<TrackCriterium>> simplifiedMembers;

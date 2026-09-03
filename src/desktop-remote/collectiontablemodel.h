@@ -92,6 +92,7 @@ namespace PMP
         void onUserTrackDataChanged(quint32 userId, Client::LocalHashId hashId);
         void currentTrackInfoChanged(Client::LocalHashId hashId);
         void onHashInQueuePresenceChanged(Client::LocalHashId hashId);
+        void onTrackLabelsChanged(Client::LocalHashId hashId);
 
     private:
         void updateTrackAvailability(Client::LocalHashId hashId, bool isAvailable);

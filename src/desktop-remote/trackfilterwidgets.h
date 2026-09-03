@@ -36,6 +36,7 @@ QT_FORWARD_DECLARE_CLASS(QVBoxLayout)
 namespace PMP::Client
 {
     class ServerInterface;
+    class TrackLabelsController;
 }
 
 namespace PMP
@@ -46,7 +47,7 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        explicit FilterLabelWidget(QWidget* parent);
+        FilterLabelWidget(QWidget* parent, Client::ServerInterface* serverInterface);
 
         void setCriterium(std::unique_ptr<TrackCriterium> criterium);
 
@@ -59,6 +60,8 @@ namespace PMP
         class CriteriumCaptionGenerator : public TrackCriteriumVisitor
         {
         public:
+            CriteriumCaptionGenerator(Client::ServerInterface* serverInterface);
+
             QString caption() const { return _caption; }
 
             void visit(const ConstantTrackCriterium&) override;
@@ -71,14 +74,17 @@ namespace PMP
             void visit(const TrackQueuePresenceCriterium&) override;
             void visit(const TrackAvailabilityCriterium&) override;
             void visit(const TrackMetaDataPresenceCriterium&) override;
+            void visit(const TrackLabelPresenceCriterium&) override;
             void visit(const CompositeTrackCriterium&) override;
 
         private:
             QString toString(ComparisonOperator comparisonOperator);
 
+            Client::ServerInterface* _serverInterface;
             QString _caption;
         };
 
+        Client::ServerInterface* _serverInterface;
         std::unique_ptr<TrackCriterium> _criterium;
         ClickableLabel* _label;
     };
@@ -150,6 +156,27 @@ namespace PMP
         quint8 _suspendChangeSignal { 0 };
     };
 
+    class LabelPresenceEditorWidget : public FilterEditorWidget
+    {
+        Q_OBJECT
+    public:
+        explicit LabelPresenceEditorWidget(QWidget* parent,
+                                           Client::ServerInterface* serverInterface);
+        void setInverted(bool isInverted);
+        void setLabel(quint32 labelId);
+
+        std::unique_ptr<TrackCriterium> createCriterium() const override;
+
+    private:
+        Client::ServerInterface* _serverInterface;
+        QComboBox* _inversionComboBox;
+        QComboBox* _labelComboBox;
+        quint32 _labelIdToSelect { 0 };
+        QHash<quint32, QString> _labelIdsToNames;
+        quint8 _ignoreLabelComboBoxIndexChanges { 0 };
+        bool _labelsLoaded { false };
+    };
+
     class FilterEditorFactory
     {
     public:
@@ -174,6 +201,7 @@ namespace PMP
             void visit(const TrackQueuePresenceCriterium&) override;
             void visit(const TrackAvailabilityCriterium&) override;
             void visit(const TrackMetaDataPresenceCriterium&) override;
+            void visit(const TrackLabelPresenceCriterium&) override;
             void visit(const CompositeTrackCriterium&) override;
 
         private:
@@ -198,6 +226,7 @@ namespace PMP
             void visit(const TrackQueuePresenceCriterium&) override;
             void visit(const TrackAvailabilityCriterium&) override;
             void visit(const TrackMetaDataPresenceCriterium&) override;
+            void visit(const TrackLabelPresenceCriterium&) override;
             void visit(const CompositeTrackCriterium&) override;
 
         private:
