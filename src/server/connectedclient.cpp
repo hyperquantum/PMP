@@ -945,14 +945,17 @@ namespace PMP::Server
         }
 
         bool includeTrackId = _clientProtocolNo >= 28;
+        bool hashNoLongerIncluded = _clientProtocolNo >= 29;
 
         quint32 nextStartId = lowestEntryId > 0 ? lowestEntryId : 0;
 
+        int bytesPerEntry =
+            4 + (includeTrackId ? 8 : 0)
+                + 8 + 8 + 2 + 2
+                + (hashNoLongerIncluded ? 0 : NetworkProtocol::FILEHASH_BYTECOUNT);
+
         QByteArray message;
-        message.reserve(2 + 2 + 4 + 4 + fragment.entries().size() *
-                            (4
-                                + (includeTrackId ? 8 : 0)
-                                + 8 + 8 + 2 + 2 + NetworkProtocol::FILEHASH_BYTECOUNT));
+        message.reserve(2 + 2 + 4 + 4 + fragment.entries().size() * bytesPerEntry);
         NetworkProtocol::append2Bytes(message, ServerMessageType::HistoryFragmentMessage);
         NetworkUtil::append2BytesUnsigned(message, fragment.entries().size());
         NetworkUtil::append4Bytes(message, clientReference);
@@ -975,7 +978,11 @@ namespace PMP::Server
             NetworkUtil::append8ByteQDateTimeMsSinceEpoch(message, entry.ended());
             NetworkUtil::append2BytesSigned(message, permillage);
             NetworkUtil::append2Bytes(message, status);
-            NetworkProtocol::appendHash(message, entry.hash());
+
+            if (!hashNoLongerIncluded)
+            {
+                NetworkProtocol::appendHash(message, entry.hash());
+            }
         }
 
         sendBinaryMessage(message);

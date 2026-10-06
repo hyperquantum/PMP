@@ -4363,12 +4363,12 @@ namespace PMP::Client
         quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
         uint nextStartId = NetworkUtil::get4Bytes(message, 8);
 
-        int bytesPerTrack =
+        int bytesPerEntry =
             24
             + (withTrackId ? 8 : 0)
             + (hashNoLongerIncluded ? 0 : NetworkProtocol::FILEHASH_BYTECOUNT);
 
-        auto expectedMessageSize = 12 + entryCount * bytesPerTrack;
+        auto expectedMessageSize = 12 + entryCount * bytesPerEntry;
 
         if (message.length() != expectedMessageSize)
             return; /* invalid message */
