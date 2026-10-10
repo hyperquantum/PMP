@@ -1,4 +1,23 @@
 
 - collection search by file hash
+- drag-drop of track in collection view
+- drag-drop of track in player history
+- drag-drop of track from quick search dialog
 -
--
+
+server messages:
+- HashUserDataMessage 22
+- CollectionAvailabilityChangeNotificationMessage 29
+- TrackServerIdMessage 39
+- TrackInfoReply 40
+
+client messages:
+- TrackUserDataRequestMessage 18
+- PersonalHistoryRequest 27
+- TrackServerIdRequest 29
+- TrackInfoRequest 30
+
+command-line stuff:
+- track history
+- track stats
+- now playing
