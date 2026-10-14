@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2014-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -60,7 +60,6 @@ namespace PMP
 
     public:
         MainWindow(QWidget* parent = 0);
-        ~MainWindow();
 
     protected:
         bool eventFilter(QObject*, QEvent*);
@@ -118,8 +117,6 @@ namespace PMP
         QTimer* _leftStatusTimer;
 
         ConnectionWidget* _connectionWidget;
-        Client::LocalHashIdRepository* _hashIdRepository;
-        Client::TrackServerIdRepository* _trackServerIdRepository;
         Client::ServerConnection* _connection { nullptr };
         Client::ServerInterface* _serverInterface { nullptr };
         Client::QueueHashesMonitor* _queueHashesMonitor { nullptr };

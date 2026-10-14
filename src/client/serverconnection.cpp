@@ -814,12 +814,10 @@ namespace PMP::Client
     const quint16 ServerConnection::ClientProtocolNo = 29;
 
     ServerConnection::ServerConnection(QObject* parent,
-                                       LocalHashIdRepository* hashIdRepository,
-                                       TrackServerIdRepository* trackServerIdRepository,
                                        ServerEventSubscription eventSubscription)
      : QObject(parent),
-       _hashIdRepository(hashIdRepository),
-       _trackServerIdRepository(trackServerIdRepository),
+       _hashIdRepository(std::make_unique<LocalHashIdRepository>()),
+       _trackServerIdRepository(std::make_unique<TrackServerIdRepository>()),
        _serverCapabilities(new ServerCapabilitiesImpl()),
        _disconnectReason(DisconnectReason::Unknown),
        _inactivityTimer(new InactivityTimer(this)),

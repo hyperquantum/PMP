@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2014-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -25,13 +25,11 @@
 #include "common/version.h"
 
 #include "client/generalcontroller.h"
-#include "client/localhashidrepository.h"
 #include "client/playercontroller.h"
 #include "client/queuehashesmonitor.h"
 #include "client/scrobblingcontroller.h"
 #include "client/serverconnection.h"
 #include "client/serverinterface.h"
-#include "client/trackserveridrepository.h"
 
 #include "collectionwidget.h"
 #include "connectionwidget.h"
@@ -70,8 +68,6 @@ namespace PMP
      : QMainWindow(parent),
        _leftStatusTimer(new QTimer(this)),
        _connectionWidget(new ConnectionWidget(this)),
-       _hashIdRepository(new LocalHashIdRepository()),
-       _trackServerIdRepository(new TrackServerIdRepository()),
        _musicCollectionDock(new QDockWidget(tr("Music collection"), this)),
        _powerManagement(new PowerManagement(this))
     {
@@ -120,12 +116,6 @@ namespace PMP
         }
 
         installEventFilter(this);
-    }
-
-    MainWindow::~MainWindow()
-    {
-        delete _hashIdRepository;
-        delete _trackServerIdRepository;
     }
 
     void MainWindow::createActions()
@@ -698,9 +688,7 @@ namespace PMP
 
     void MainWindow::onDoConnect(QString server, uint port)
     {
-        _connection = new ServerConnection(this,
-                                           _hashIdRepository,
-                                           _trackServerIdRepository);
+        _connection = new ServerConnection(this);
         _serverInterface = new ServerInterfaceImpl(_connection);
 
         auto* generalController = &_serverInterface->generalController();

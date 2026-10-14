@@ -53,6 +53,8 @@
 #include <QUuid>
 #include <QVector>
 
+#include <memory>
+
 namespace PMP::Client
 {
     class CollectionFetcher;
@@ -100,8 +102,6 @@ namespace PMP::Client
 
     public:
         explicit ServerConnection(QObject* parent,
-                                  LocalHashIdRepository* hashIdRepository,
-                                  TrackServerIdRepository* trackServerIdRepository,
                                   ServerEventSubscription eventSubscription =
                                                       ServerEventSubscription::AllEvents);
         ~ServerConnection();
@@ -437,8 +437,8 @@ namespace PMP::Client
 
         static const quint16 ClientProtocolNo;
 
-        LocalHashIdRepository* _hashIdRepository;
-        TrackServerIdRepository* _trackServerIdRepository;
+        std::unique_ptr<LocalHashIdRepository> _hashIdRepository;
+        std::unique_ptr<TrackServerIdRepository> _trackServerIdRepository;
         ServerCapabilitiesImpl* _serverCapabilities;
         DisconnectReason _disconnectReason;
         InactivityTimer* _inactivityTimer;
