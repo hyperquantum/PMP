@@ -78,6 +78,7 @@ IDEAS
  * music collection: provide general statistics (e.g. total number of files present, number of hashes with a file...)
  * music collection: new action: add track before first interruption (break/barrier)
  * music collection: new action to select the first occurrence of that track in the queue
+ * music collection: add inverse (text) search
  * music collection: new filter criterium "without album artist"
  * music collection: new filter criterium "in the queue or current track"
  * music collection: quick indexation action that only examines files that are new or appear to have changed
