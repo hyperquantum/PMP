@@ -1994,7 +1994,7 @@ namespace PMP::Client
         auto ref = registerResultHandler(handler);
 
         QByteArray message;
-        message.reserve(2 + 2 + 4 + NetworkProtocol::FILEHASH_BYTECOUNT);
+        message.reserve(2 + 2 + 4 + 8);
         NetworkProtocol::append2Bytes(message, ClientMessageType::TrackInfoRequest);
         NetworkUtil::append2Bytes(message, 0); // filler
         NetworkUtil::append4Bytes(message, ref);
