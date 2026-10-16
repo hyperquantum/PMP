@@ -4212,8 +4212,7 @@ namespace PMP::Client
 
     void ServerConnection::parseHashInfoReply(const QByteArray& message)
     {
-        bool includesTrackId =
-            _serverProtocolNo >= 28 && !_serverCapabilities->usesServerIdsForAllTracks();
+        bool includesTrackId = _serverProtocolNo >= 28;
 
         int minimumMessageLength = 20 + (includesTrackId ? 8 : 0);
 
