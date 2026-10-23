@@ -114,6 +114,7 @@ IDEAS
  * command-line remote: extend the "trackstats" command to accept queue IDs
  * command-line remote: extend the "qmove" command to accept "front" or "end" as destination
  * command-line remote: stop requiring authentication for the "queue" command
+ * command-line remote: extend the "trackhistory" command to also display an "affects score" column
  * hash tool: by default only output the hash of the file, no other information
  * save track length/title/artist/album to the database
  * when skipping the current track after a long-time pause (say, more than 10 min), do not let the skip affect scoring of the paused track
