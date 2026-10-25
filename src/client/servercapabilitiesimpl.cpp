@@ -82,7 +82,7 @@ namespace PMP::Client
         return _serverProtocolNumber >= 27;
     }
 
-    bool ServerCapabilitiesImpl::usesServerIdsForAllTracks() const
+    bool ServerCapabilitiesImpl::usesServerIdsInsteadOfHashes() const
     {
         return _serverProtocolNumber >= 29;
     }

@@ -1019,9 +1019,11 @@ namespace PMP::Client
                 qDebug() << "server protocol version:" << _serverProtocolNo;
                 _serverCapabilities->setServerProtocolNumber(_serverProtocolNo);
 
-                _hashIdRepository->init(_serverCapabilities->usesServerIdsForAllTracks()
-                                            ? LocalTrackIdMode::ServerId
-                                            : LocalTrackIdMode::Hash);
+                _hashIdRepository->init(
+                    _serverCapabilities->usesServerIdsInsteadOfHashes()
+                        ? LocalTrackIdMode::ServerId
+                        : LocalTrackIdMode::Hash
+                );
 
                 _state = BinaryMode;
 
@@ -1897,7 +1899,7 @@ namespace PMP::Client
         }
 
         bool useTrackServerIdInsteadOfHash =
-            _serverCapabilities->usesServerIdsForAllTracks();
+            _serverCapabilities->usesServerIdsInsteadOfHashes();
 
         int trackBytes =
             useTrackServerIdInsteadOfHash ? 8 : NetworkProtocol::FILEHASH_BYTECOUNT;
@@ -1945,7 +1947,7 @@ namespace PMP::Client
 
         auto serverId = track.toId().value();
 
-        if (!_serverCapabilities->usesServerIdsForAllTracks())
+        if (!_serverCapabilities->usesServerIdsInsteadOfHashes())
         {
             auto hash = _trackServerIdRepository->getHashForServerId(serverId).value();
             return sendHashInfoRequest(hash);
@@ -1984,7 +1986,7 @@ namespace PMP::Client
     {
         Q_ASSERT_X(!track.isZero(), "sendTrackInfoRequest", "track ID is zero");
 
-        if (!_serverCapabilities->usesServerIdsForAllTracks())
+        if (!_serverCapabilities->usesServerIdsInsteadOfHashes())
             return serverTooOldFutureError();
 
         qDebug() << "ServerConnection: sending request for track info; track server id:"
@@ -3783,7 +3785,7 @@ namespace PMP::Client
         int unavailableCount = int(uint(NetworkUtil::get2Bytes(message, 6)));
         int offset = 8;
 
-        bool withIdInsteadOfHash = _serverCapabilities->usesServerIdsForAllTracks();
+        bool withIdInsteadOfHash = _serverCapabilities->usesServerIdsInsteadOfHashes();
         int bytesPerTrack = withIdInsteadOfHash ? 8 : NetworkProtocol::FILEHASH_BYTECOUNT;
 
         int expectedMessageLength =
@@ -4119,7 +4121,7 @@ namespace PMP::Client
         bool havePreviouslyHeard = (fields & 1) == 1;
         bool haveScore = (fields & 2) == 2;
 
-        bool withIdInsteadOfHash = _serverCapabilities->usesServerIdsForAllTracks();
+        bool withIdInsteadOfHash = _serverCapabilities->usesServerIdsInsteadOfHashes();
 
         int bytesPerHash =
             (withIdInsteadOfHash ? 8 : NetworkProtocol::FILEHASH_BYTECOUNT)
@@ -4354,7 +4356,7 @@ namespace PMP::Client
             return; /* invalid message */
 
         bool withTrackId = _serverProtocolNo >= 28;
-        bool hashNoLongerIncluded = _serverCapabilities->usesServerIdsForAllTracks();
+        bool hashNoLongerIncluded = _serverCapabilities->usesServerIdsInsteadOfHashes();
 
         quint16 entryCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
         quint32 clientReference = NetworkUtil::get4Bytes(message, 4);

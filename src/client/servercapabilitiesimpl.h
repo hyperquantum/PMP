@@ -41,7 +41,7 @@ namespace PMP::Client
         bool supportsAlbumArtist() const override;
         bool supportsRequestingPersonalTrackHistory() const override;
         bool supportsRequestingIndividualTrackInfo() const override;
-        bool usesServerIdsForAllTracks() const override;
+        bool usesServerIdsInsteadOfHashes() const override;
 
     private:
         int _serverProtocolNumber;

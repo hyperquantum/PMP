@@ -37,7 +37,10 @@ namespace PMP::Client
         virtual bool supportsAlbumArtist() const = 0;
         virtual bool supportsRequestingPersonalTrackHistory() const = 0;
         virtual bool supportsRequestingIndividualTrackInfo() const = 0;
-        virtual bool usesServerIdsForAllTracks() const = 0; // TODO : rename :-)
+
+        /// To identify tracks in client-server communication, are server-side IDs
+        /// used instead of hashes?
+        virtual bool usesServerIdsInsteadOfHashes() const = 0;
 
     protected:
         ServerCapabilities() {}
