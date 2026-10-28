@@ -22,7 +22,7 @@
 
 #include "common/filehash.h"
 
-#include "localhashid.h"
+#include "localtrackid.h"
 #include "trackhashorid.h"
 #include "trackserverid.h"
 
@@ -40,18 +40,18 @@ namespace PMP::Client
 
         LocalTrackIdMode mode() const;
 
-        LocalHashId registerTrack(TrackServerId trackId, FileHash const& hash);
-        LocalHashId registerTrackByServerId(TrackServerId trackId);
-        LocalHashId registerTrackByHash(FileHash const& hash);
+        LocalTrackId registerTrack(TrackServerId trackId, FileHash const& hash);
+        LocalTrackId registerTrackByServerId(TrackServerId trackId);
+        LocalTrackId registerTrackByHash(FileHash const& hash);
 
-        LocalHashId getIdByServerId(TrackServerId trackId);
-        LocalHashId getIdByHash(FileHash const& hash);
+        LocalTrackId getIdByServerId(TrackServerId trackId);
+        LocalTrackId getIdByHash(FileHash const& hash);
 
-        TrackHashOrId getHashOrServerIdByLocalId(LocalHashId id);
-        TrackServerId getServerIdByLocalId(LocalHashId id);
-        FileHash getHashByLocalId(LocalHashId id);
+        TrackHashOrId getHashOrServerIdByLocalId(LocalTrackId id);
+        TrackServerId getServerIdByLocalId(LocalTrackId id);
+        FileHash getHashByLocalId(LocalTrackId id);
 
-        LocalHashId tryGetIdByHash(FileHash const& hash);
+        LocalTrackId tryGetIdByHash(FileHash const& hash);
 
     private:
         struct LocalIdData
@@ -62,19 +62,19 @@ namespace PMP::Client
 
         struct ServerIdData
         {
-            LocalHashId localId;
+            LocalTrackId localId;
             //FileHash hash;
         };
 
         struct HashData
         {
-            LocalHashId localId;
+            LocalTrackId localId;
             //TrackServerId serverId;
         };
 
         mutable QMutex _mutex;
         uint _lastId {0};
-        QHash<LocalHashId, LocalIdData> _localIds;
+        QHash<LocalTrackId, LocalIdData> _localIds;
         QHash<TrackServerId, ServerIdData> _serverIds;
         QHash<FileHash, HashData> _hashes;
         bool _initialized { false };

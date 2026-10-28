@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2016-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -83,7 +83,8 @@ namespace PMP::Client
     //    //
     //}
 
-    bool UserDataFetcherImpl::checkHaveHashDataForUser(quint32 userId, LocalHashId hashId)
+    bool UserDataFetcherImpl::checkHaveHashDataForUser(quint32 userId,
+                                                       LocalTrackId hashId)
     {
         if (hashId.isZero())
             return false;
@@ -96,8 +97,8 @@ namespace PMP::Client
     }
 
     UserDataFetcher::HashData const* UserDataFetcherImpl::getHashDataForUser(
-                                                                       quint32 userId,
-                                                                       LocalHashId hashId)
+                                                                    quint32 userId,
+                                                                    LocalTrackId hashId)
     {
         if (hashId.isZero())
             return nullptr;
@@ -121,7 +122,7 @@ namespace PMP::Client
         }
     }
 
-    void UserDataFetcherImpl::receivedHashUserData(LocalHashId hashId, quint32 userId,
+    void UserDataFetcherImpl::receivedHashUserData(LocalTrackId hashId, quint32 userId,
                                                    QDateTime previouslyHeard,
                                                    qint16 scorePermillage)
     {
@@ -169,7 +170,7 @@ namespace PMP::Client
         _pendingNotificationsUsers.clear();
     }
 
-    void UserDataFetcherImpl::needToRequestData(quint32 userId, LocalHashId hashId)
+    void UserDataFetcherImpl::needToRequestData(quint32 userId, LocalTrackId hashId)
     {
         bool first = _hashesToFetchForUsers.isEmpty();
 

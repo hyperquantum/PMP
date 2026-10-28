@@ -20,7 +20,7 @@
 #ifndef PMP_QUEUEMODEL_H
 #define PMP_QUEUEMODEL_H
 
-#include "client/localhashid.h"
+#include "client/localtrackid.h"
 
 #include <QAbstractTableModel>
 #include <QHash>
@@ -81,21 +81,21 @@ namespace PMP
             //
         }
 
-        QueueTrack(quint32 queueId, Client::LocalHashId hashId)
+        QueueTrack(quint32 queueId, Client::LocalTrackId hashId)
          : _id(queueId), _hashId(hashId), _real(true)
         {
             //
         }
 
         quint32 queueId() const { return _id; }
-        Client::LocalHashId hashId() const { return _hashId; }
+        Client::LocalTrackId hashId() const { return _hashId; }
 
         bool isNull() const { return _id == 0; }
         bool isRealTrack() const { return _real; }
 
     private:
         quint32 _id;
-        Client::LocalHashId _hashId;
+        Client::LocalTrackId _hashId;
         bool _real;
     };
 

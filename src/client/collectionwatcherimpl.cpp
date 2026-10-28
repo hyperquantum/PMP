@@ -20,7 +20,6 @@
 #include "collectionwatcherimpl.h"
 
 #include "collectionfetcher.h"
-#include "localhashidrepository.h"
 #include "servercapabilities.h"
 #include "serverconnection.h"
 
@@ -68,37 +67,37 @@ namespace PMP::Client
         return _downloading;
     }
 
-    QHash<LocalHashId, CollectionTrackInfo> CollectionWatcherImpl::getCollection()
+    QHash<LocalTrackId, CollectionTrackInfo> CollectionWatcherImpl::getCollection()
     {
         return _collectionHash;
     }
 
-    Future<LocalHashId, AnyResultMessageCode>
+    Future<LocalTrackId, AnyResultMessageCode>
         CollectionWatcherImpl::convertTrackHashToLocalId(const FileHash& hash)
     {
         return _connection->convertTrackHashToLocalId(hash);
     }
 
     Future<FileHash, AnyResultMessageCode>
-        CollectionWatcherImpl::convertLocalTrackIdToHash(LocalHashId localId)
+        CollectionWatcherImpl::convertLocalTrackIdToHash(LocalTrackId localId)
     {
         return _connection->convertLocalTrackIdToHash(localId);
     }
 
-    Nullable<LocalHashId> CollectionWatcherImpl::tryConvertTrackHashToLocalId(
+    Nullable<LocalTrackId> CollectionWatcherImpl::tryConvertTrackHashToLocalId(
         const FileHash& hash)
     {
         return _connection->tryConvertTrackHashToLocalId(hash);
     }
 
     Nullable<FileHash> CollectionWatcherImpl::tryConvertLocalTrackIdToHash(
-        LocalHashId localId)
+        LocalTrackId localId)
     {
         return _connection->tryConvertLocalTrackIdToHash(localId);
     }
 
     Nullable<CollectionTrackInfo> CollectionWatcherImpl::getTrackFromCache(
-                                                                       LocalHashId hashId)
+                                                                       LocalTrackId hashId)
     {
         auto it = _collectionHash.find(hashId);
 
@@ -115,7 +114,7 @@ namespace PMP::Client
     }
 
     Future<CollectionTrackInfo, AnyResultMessageCode>
-        CollectionWatcherImpl::getTrackInfo(LocalHashId hashId)
+        CollectionWatcherImpl::getTrackInfo(LocalTrackId hashId)
     {
         auto it = _collectionHash.find(hashId);
 
@@ -172,8 +171,8 @@ namespace PMP::Client
     }
 
     void CollectionWatcherImpl::onCollectionTracksAvailabilityChanged(
-                                                         QVector<LocalHashId> available,
-                                                         QVector<LocalHashId> unavailable)
+                                                         QVector<LocalTrackId> available,
+                                                         QVector<LocalTrackId> unavailable)
     {
         updateTrackAvailability(available, true);
         updateTrackAvailability(unavailable, false);
@@ -189,7 +188,7 @@ namespace PMP::Client
     }
 
     Future<CollectionTrackInfo, AnyResultMessageCode>
-        CollectionWatcherImpl::fetchTrackInfoFromServer(LocalHashId hashId)
+        CollectionWatcherImpl::fetchTrackInfoFromServer(LocalTrackId hashId)
     {
         auto future = _connection->getTrackInfo(hashId);
 
@@ -248,7 +247,7 @@ namespace PMP::Client
         Q_EMIT downloadingInProgressChanged();
     }
 
-    void CollectionWatcherImpl::updateTrackAvailability(QVector<LocalHashId> hashes,
+    void CollectionWatcherImpl::updateTrackAvailability(QVector<LocalTrackId> hashes,
                                                         bool available)
     {
         for (auto const& hash : hashes)

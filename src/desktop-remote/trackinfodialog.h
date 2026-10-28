@@ -53,7 +53,7 @@ namespace PMP
         TrackInfoDialog(QWidget* parent,
                         Client::ServerInterface* serverInterface,
                         UserForStatisticsDisplay* userForStatisticsDisplay,
-                        Client::LocalHashId trackId, quint32 queueId = 0);
+                        Client::LocalTrackId trackId, quint32 queueId = 0);
 
         TrackInfoDialog(QWidget* parent,
                         Client::ServerInterface* serverInterface,
@@ -80,7 +80,7 @@ namespace PMP
 
         void fillQueueId();
         void fillTrackDetails(Client::CollectionTrackInfo const& trackInfo);
-        void fillUserData(Client::LocalHashId hashId, quint32 userId);
+        void fillUserData(Client::LocalTrackId hashId, quint32 userId);
         void clearTrackDetails();
         void clearUserData();
 
@@ -89,7 +89,7 @@ namespace PMP
         Client::ServerInterface* _serverInterface;
         UserForStatisticsDisplay* _userStatisticsDisplay;
         QTimer* _lastHeardUpdateTimer;
-        Client::LocalHashId _trackId;
+        Client::LocalTrackId _trackId;
         Nullable<FileHash> _hash;
         QDateTime _lastHeard;
         quint32 _queueId { 0 };

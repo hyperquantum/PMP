@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,7 +20,7 @@
 #ifndef PMP_CLIENT_COLLECTIONTRACKINFO_H
 #define PMP_CLIENT_COLLECTIONTRACKINFO_H
 
-#include "localhashid.h"
+#include "localtrackid.h"
 
 #include <QMetaType>
 #include <QString>
@@ -36,13 +36,13 @@ namespace PMP::Client
             //
         }
 
-        CollectionTrackInfo(LocalHashId hashId, bool isAvailable)
+        CollectionTrackInfo(LocalTrackId hashId, bool isAvailable)
          : _hashId(hashId), _isAvailable(isAvailable), _lengthInMs(-1)
         {
             //
         }
 
-        CollectionTrackInfo(LocalHashId hashId, bool isAvailable,
+        CollectionTrackInfo(LocalTrackId hashId, bool isAvailable,
                             QString const& title, QString const& artist,
                             QString const& album, QString const& albumArtist,
                             qint32 lengthInMilliseconds)
@@ -52,7 +52,7 @@ namespace PMP::Client
             //
         }
 
-        constexpr LocalHashId hashId() const { return _hashId; }
+        constexpr LocalTrackId hashId() const { return _hashId; }
 
         void setAvailable(bool available) { _isAvailable = available; }
         bool isAvailable() const { return _isAvailable; }
@@ -77,7 +77,7 @@ namespace PMP::Client
         }
 
     private:
-        LocalHashId _hashId;
+        LocalTrackId _hashId;
         bool _isAvailable;
         qint32 _lengthInMs;
         QString _title, _artist, _album, _albumArtist;

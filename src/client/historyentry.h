@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,7 +20,7 @@
 #ifndef PMP_CLIENT_HISTORYENTRY_H
 #define PMP_CLIENT_HISTORYENTRY_H
 
-#include "localhashid.h"
+#include "localtrackid.h"
 
 #include <QDateTime>
 #include <QtGlobal>
@@ -30,7 +30,7 @@ namespace PMP::Client
     class HistoryEntry
     {
     public:
-        HistoryEntry(LocalHashId hashId, uint user, QDateTime started, QDateTime ended,
+        HistoryEntry(LocalTrackId hashId, uint user, QDateTime started, QDateTime ended,
                      int permillage, bool validForScoring)
          : _hashId(hashId), _user(user), _started(started), _ended(ended),
            _permillage(permillage), _validForScoring(validForScoring)
@@ -38,7 +38,7 @@ namespace PMP::Client
             //
         }
 
-        LocalHashId hashId() const { return _hashId; }
+        LocalTrackId hashId() const { return _hashId; }
         uint userId() const { return _user; }
         QDateTime started() const { return _started; }
         QDateTime ended() const { return _ended; }
@@ -46,7 +46,7 @@ namespace PMP::Client
         int permillage() const { return _permillage; }
 
     private:
-        LocalHashId _hashId;
+        LocalTrackId _hashId;
         uint _user;
         QDateTime _started;
         QDateTime _ended;

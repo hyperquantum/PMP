@@ -166,7 +166,7 @@ namespace PMP
                 .thenOnEventLoopIndirect<HistoryFragment, AnyResultMessageCode>(
                     serverInterface,
                     [serverInterface, userId](
-                        ResultOrError<LocalHashId, AnyResultMessageCode> outcome)
+                        ResultOrError<LocalTrackId, AnyResultMessageCode> outcome)
                         -> Future<HistoryFragment, AnyResultMessageCode>
                     {
                         if (outcome.failed())

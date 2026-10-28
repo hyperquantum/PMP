@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,7 +23,7 @@
 #include "common/queueentrytype.h"
 #include "common/tribool.h"
 
-#include "localhashid.h"
+#include "localtrackid.h"
 
 #include <QObject>
 
@@ -49,7 +49,7 @@ namespace PMP::Client
         }
 
         QueueEntryType type() const { return _type; }
-        LocalHashId hashId() const { return _hashId; }
+        LocalTrackId hashId() const { return _hashId; }
         int lengthInMilliseconds() const { return _lengthMilliseconds; }
         QString artist() const { return _artist; }
         QString title() const { return _title; }
@@ -57,7 +57,7 @@ namespace PMP::Client
         bool needFilename() const;
         QString informativeFilename() const { return _informativeFilename; }
 
-        void setHash(QueueEntryType type, LocalHashId hashId);
+        void setHash(QueueEntryType type, LocalTrackId hashId);
         void setInfo(QueueEntryType type, qint64 lengthInMilliseconds,
                      QString const& title, QString const& artist);
         bool setPossibleFilenames(QList<QString> const& names);
@@ -65,7 +65,7 @@ namespace PMP::Client
     private:
         quint32 _queueId;
         QueueEntryType _type;
-        LocalHashId _hashId;
+        LocalTrackId _hashId;
         qint64 _lengthMilliseconds;
         QString _title;
         QString _artist;

@@ -23,7 +23,7 @@
 #include "common/playerstate.h"
 
 #include "client/collectiontrackinfo.h"
-#include "client/localhashid.h"
+#include "client/localtrackid.h"
 
 #include <QAbstractTableModel>
 #include <QDialog>
@@ -58,9 +58,9 @@ namespace PMP
                                 Client::ServerInterface* serverInterface,
                                 Client::QueueHashesMonitor* queueHashesMonitor);
 
-        void setTracksList(QList<Client::LocalHashId> tracks);
+        void setTracksList(QList<Client::LocalTrackId> tracks);
 
-        Client::LocalHashId trackAt(const QModelIndex& index) const;
+        Client::LocalTrackId trackAt(const QModelIndex& index) const;
 
         int rowCount(const QModelIndex& parent = QModelIndex()) const override;
         int columnCount(const QModelIndex& parent = QModelIndex()) const override;
@@ -76,23 +76,23 @@ namespace PMP
     private Q_SLOTS:
         void onPlayerStateChanged(PlayerState playerState);
         void onCurrentTrackInfoChanged();
-        void onTrackAvailabilityChanged(Client::LocalHashId hashId, bool isAvailable);
+        void onTrackAvailabilityChanged(Client::LocalTrackId hashId, bool isAvailable);
         void onTrackDataChanged(Client::CollectionTrackInfo track);
-        void onHashInQueuePresenceChanged(Client::LocalHashId hashId);
+        void onHashInQueuePresenceChanged(Client::LocalTrackId hashId);
 
     private:
-        int getTrackIndex(Client::LocalHashId trackId) const;
-        QVariant trackData(Client::LocalHashId trackId, int column, int role) const;
+        int getTrackIndex(Client::LocalTrackId trackId) const;
+        QVariant trackData(Client::LocalTrackId trackId, int column, int role) const;
         void markLeftColumnAsChanged(int index);
         void markRowAsChanged(int index);
 
         Client::ServerInterface* _serverInterface;
         Client::CollectionWatcher* _collectionWatcher;
         Client::QueueHashesMonitor* _queueHashesMonitor;
-        Client::LocalHashId _nowPlayingTrackHash;
+        Client::LocalTrackId _nowPlayingTrackHash;
         PlayerState _playerState { PlayerState::Unknown };
-        QList<Client::LocalHashId> _tracks;
-        QHash<Client::LocalHashId, int> _hashIdToIndex;
+        QList<Client::LocalTrackId> _tracks;
+        QHash<Client::LocalTrackId, int> _hashIdToIndex;
     };
 
     class SearchDialog : public QDialog

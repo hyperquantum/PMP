@@ -381,7 +381,7 @@ namespace PMP
         addOrUpdateTrack(track);
     }
 
-    void SortedCollectionTableModel::onTrackAvailabilityChanged(LocalHashId hashId,
+    void SortedCollectionTableModel::onTrackAvailabilityChanged(LocalTrackId hashId,
                                                                 bool isAvailable)
     {
         updateTrackAvailability(hashId, isAvailable);
@@ -393,7 +393,7 @@ namespace PMP
     }
 
     void SortedCollectionTableModel::onUserTrackDataChanged(quint32 userId,
-                                                            LocalHashId hashId)
+                                                            LocalTrackId hashId)
     {
         Q_UNUSED(userId)
         /* ignore the user ID for change notifications */
@@ -406,7 +406,7 @@ namespace PMP
                            createIndex(outerIndex, 4 - 1));
     }
 
-    void SortedCollectionTableModel::currentTrackInfoChanged(LocalHashId hashId)
+    void SortedCollectionTableModel::currentTrackInfoChanged(LocalTrackId hashId)
     {
         if (_currentTrackHash == hashId)
             return;
@@ -415,7 +415,7 @@ namespace PMP
         markLeftColumnAsChanged();
     }
 
-    void SortedCollectionTableModel::onHashInQueuePresenceChanged(LocalHashId hashId)
+    void SortedCollectionTableModel::onHashInQueuePresenceChanged(LocalTrackId hashId)
     {
         qDebug() << "hash in queue presence changed: " << hashId
                  << "present?"
@@ -468,7 +468,7 @@ namespace PMP
         }
     }
 
-    int SortedCollectionTableModel::findOuterIndexForHash(LocalHashId hashId)
+    int SortedCollectionTableModel::findOuterIndexForHash(LocalTrackId hashId)
     {
         auto innerIndex = _hashesToInnerIndexes.value(hashId, -1);
         if (innerIndex < 0)
@@ -490,7 +490,7 @@ namespace PMP
         );
     }
 
-    void SortedCollectionTableModel::updateTrackAvailability(LocalHashId hashId,
+    void SortedCollectionTableModel::updateTrackAvailability(LocalTrackId hashId,
                                                              bool isAvailable)
     {
         auto hashIterator = _hashesToInnerIndexes.find(hashId);
@@ -511,7 +511,7 @@ namespace PMP
             return;
 
         QVector<CollectionTrackInfo*> trackList;
-        QHash<LocalHashId, int> hashIndexer;
+        QHash<LocalTrackId, int> hashIndexer;
         trackList.reserve(trackCollection.size());
         hashIndexer.reserve(trackCollection.size());
 
@@ -709,7 +709,7 @@ namespace PMP
         return _tracks.at(_outerToInnerIndexMap.at(rowIndex));
     }
 
-    int SortedCollectionTableModel::trackIndex(Client::LocalHashId hashId) const
+    int SortedCollectionTableModel::trackIndex(Client::LocalTrackId hashId) const
     {
         auto it = _hashesToInnerIndexes.constFind(hashId);
         if (it == _hashesToInnerIndexes.constEnd())

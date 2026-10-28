@@ -47,7 +47,7 @@ namespace PMP
     TrackInfoDialog::TrackInfoDialog(QWidget* parent,
                                      ServerInterface* serverInterface,
                                      UserForStatisticsDisplay* userForStatisticsDisplay,
-                                     LocalHashId trackId,
+                                     LocalTrackId trackId,
                                      quint32 queueId)
      : QDialog(parent, Qt::WindowTitleHint | Qt::WindowCloseButtonHint),
         _ui(new Ui::TrackInfoDialog),
@@ -464,7 +464,7 @@ namespace PMP
         _ui->lengthValueLabel->setText(lengthText);
     }
 
-    void TrackInfoDialog::fillUserData(LocalHashId hashId, quint32 userId)
+    void TrackInfoDialog::fillUserData(LocalTrackId hashId, quint32 userId)
     {
         if (!_serverInterface->isLoggedIn())
         {

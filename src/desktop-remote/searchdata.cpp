@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2024-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2024-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -49,7 +49,7 @@ namespace PMP
         );
     }
 
-    bool SearchData::isFileMatchForQuery(LocalHashId hashId,
+    bool SearchData::isFileMatchForQuery(LocalTrackId hashId,
                                          SearchQuery const& query) const
     {
         auto it = _trackData.constFind(hashId);
@@ -63,9 +63,9 @@ namespace PMP
         return isTrackDataMatchForQuery(trackData, query);
     }
 
-    QList<LocalHashId> SearchData::getAllMatchesForQuery(const SearchQuery& query) const
+    QList<LocalTrackId> SearchData::getAllMatchesForQuery(const SearchQuery& query) const
     {
-        QList<LocalHashId> matches;
+        QList<LocalTrackId> matches;
         matches.reserve(100); // prepare for a potentially large result list
 
         for (auto it = _trackData.constBegin(); it != _trackData.constEnd(); ++it)
@@ -80,7 +80,7 @@ namespace PMP
             return matches;
 
         // calculate score for each match
-        QMap<LocalHashId, int> matchesWithScore;
+        QMap<LocalTrackId, int> matchesWithScore;
         for (auto const& match : std::as_const(matches))
         {
             auto const& trackData = _trackData[match];
@@ -97,7 +97,7 @@ namespace PMP
         std::sort(
             matches.begin(),
             matches.end(),
-            [matchesWithScore](LocalHashId const& first, LocalHashId const& second)
+            [matchesWithScore](LocalTrackId const& first, LocalTrackId const& second)
             {
                 int firstScore = matchesWithScore[first];
                 int secondScore = matchesWithScore[second];

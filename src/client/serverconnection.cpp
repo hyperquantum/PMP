@@ -675,7 +675,7 @@ namespace PMP::Client
     {
         Q_UNUSED(clientReference)
 
-        LocalHashId localId;
+        LocalTrackId localId;
 
         if (trackServerId.hasValue())
         {
@@ -1345,7 +1345,7 @@ namespace PMP::Client
         sendBinaryMessage(message);
     }
 
-    void ServerConnection::insertQueueEntryAtFront(LocalHashId hashId)
+    void ServerConnection::insertQueueEntryAtFront(LocalTrackId hashId)
     {
         auto hashOrServerId = _hashIdRepository->getHashOrServerIdByLocalId(hashId);
 
@@ -1385,7 +1385,7 @@ namespace PMP::Client
         sendBinaryMessage(message);
     }
 
-    void ServerConnection::insertQueueEntryAtEnd(LocalHashId hashId)
+    void ServerConnection::insertQueueEntryAtEnd(LocalTrackId hashId)
     {
         auto hashOrServerId = _hashIdRepository->getHashOrServerIdByLocalId(hashId);
 
@@ -1563,7 +1563,7 @@ namespace PMP::Client
                                          ParameterlessActionCode::DeactivateDelayedStart);
     }
 
-    RequestID ServerConnection::insertQueueEntryAtIndex(LocalHashId hashId,
+    RequestID ServerConnection::insertQueueEntryAtIndex(LocalTrackId hashId,
                                                         quint32 index)
     {
         if (hashId.isZero())
@@ -1671,7 +1671,7 @@ namespace PMP::Client
         return RequestID(ref);
     }
 
-    Future<LocalHashId, AnyResultMessageCode>
+    Future<LocalTrackId, AnyResultMessageCode>
         ServerConnection::convertTrackHashToLocalId(const FileHash& hash)
     {
         if (_hashIdRepository->mode() == LocalTrackIdMode::Hash)
@@ -1694,10 +1694,10 @@ namespace PMP::Client
 
         auto future =
             sendTrackServerIdRequest(hash)
-                .thenOnEventLoop<LocalHashId, AnyResultMessageCode>(
+                .thenOnEventLoop<LocalTrackId, AnyResultMessageCode>(
                     this,
                     [this](ResultOrError<TrackServerId, AnyResultMessageCode> outcome)
-                        -> ResultOrError<LocalHashId, AnyResultMessageCode>
+                        -> ResultOrError<LocalTrackId, AnyResultMessageCode>
                     {
                         if (outcome.failed())
                             return outcome.error();
@@ -1712,7 +1712,7 @@ namespace PMP::Client
     }
 
     Future<FileHash, AnyResultMessageCode> ServerConnection::convertLocalTrackIdToHash(
-        LocalHashId localId)
+        LocalTrackId localId)
     {
         if (_hashIdRepository->mode() == LocalTrackIdMode::Hash)
         {
@@ -1754,7 +1754,7 @@ namespace PMP::Client
             );
     }
 
-    Nullable<LocalHashId> ServerConnection::tryConvertTrackHashToLocalId(
+    Nullable<LocalTrackId> ServerConnection::tryConvertTrackHashToLocalId(
         const FileHash& hash)
     {
         if (_hashIdRepository->mode() == LocalTrackIdMode::Hash)
@@ -1778,7 +1778,7 @@ namespace PMP::Client
         return null;
     }
 
-    Nullable<FileHash> ServerConnection::tryConvertLocalTrackIdToHash(LocalHashId localId)
+    Nullable<FileHash> ServerConnection::tryConvertLocalTrackIdToHash(LocalTrackId localId)
     {
         if (_hashIdRepository->mode() == LocalTrackIdMode::Hash)
         {
@@ -1792,7 +1792,7 @@ namespace PMP::Client
     }
 
     Future<CollectionTrackInfo, AnyResultMessageCode> ServerConnection::getTrackInfo(
-                                                                       LocalHashId hashId)
+                                                                       LocalTrackId hashId)
     {
         auto hashOrServerId = _hashIdRepository->getHashOrServerIdByLocalId(hashId);
 
@@ -1806,7 +1806,7 @@ namespace PMP::Client
     }
 
     Future<HistoryFragment, AnyResultMessageCode>
-        ServerConnection::getPersonalTrackHistory(LocalHashId hashId, uint userId,
+        ServerConnection::getPersonalTrackHistory(LocalTrackId hashId, uint userId,
                                                   int limit, uint startId)
     {
         return sendHashHistoryRequest(hashId, userId, limit, startId);
@@ -1883,7 +1883,7 @@ namespace PMP::Client
     }
 
     void ServerConnection::sendHashUserDataRequest(quint32 userId,
-                                                   const QList<LocalHashId>& tracks)
+                                                   const QList<LocalTrackId>& tracks)
     {
         if (tracks.empty()) return;
 
@@ -2008,7 +2008,7 @@ namespace PMP::Client
     }
 
     Future<HistoryFragment, AnyResultMessageCode>
-    ServerConnection::sendHashHistoryRequest(LocalHashId trackId, uint userId,
+    ServerConnection::sendHashHistoryRequest(LocalTrackId trackId, uint userId,
                                              int limit, uint startId)
     {
         Q_ASSERT_X(!trackId.isZero(), "sendHashHistoryRequest", "track ID is zero");
@@ -3598,7 +3598,7 @@ namespace PMP::Client
 
             auto type = NetworkProtocol::trackStatusToQueueEntryType(status);
 
-            LocalHashId hashId;
+            LocalTrackId hashId;
             if (hash.isNull() == false)
             {
                 if (trackId > 0)
@@ -3797,8 +3797,8 @@ namespace PMP::Client
             return; /* invalid message */
         }
 
-        QVector<LocalHashId> available;
-        QVector<LocalHashId> unavailable;
+        QVector<LocalTrackId> available;
+        QVector<LocalTrackId> unavailable;
         available.reserve(availableCount);
         unavailable.reserve(unavailableCount);
 
@@ -4059,7 +4059,7 @@ namespace PMP::Client
             /* workaround for server bug; we shouldn't be receiving these */
             if (hash.length() == 0) continue;
 
-            LocalHashId hashId;
+            LocalTrackId hashId;
             if (trackId > 0)
             {
                 hashId = _hashIdRepository->registerTrack(TrackServerId(trackId), hash);
@@ -4140,7 +4140,7 @@ namespace PMP::Client
         bool ok;
         for (int i = 0; i < hashCount; ++i)
         {
-            LocalHashId localId;
+            LocalTrackId localId;
             if (withIdInsteadOfHash)
             {
                 quint64 trackId = NetworkUtil::get8Bytes(message, offset);
@@ -4411,7 +4411,7 @@ namespace PMP::Client
             quint16 status = NetworkUtil::get2Bytes(message, offset + 18);
             offset += 20;
 
-            LocalHashId localId;
+            LocalTrackId localId;
             if (hashNoLongerIncluded)
             {
                 localId =

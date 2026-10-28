@@ -81,7 +81,7 @@ public:
     quint32 currentQueueId() const override;
     qint64 currentTrackProgressMilliseconds() const override;
 
-    LocalHashId currentTrackHash() const override;
+    LocalTrackId currentTrackHash() const override;
 
     QString currentTrackTitle() const override;
     QString currentTrackArtist() const override;
@@ -96,7 +96,7 @@ class QueueHashesMonitorMock : public QueueHashesMonitor
 {
     Q_OBJECT
 public:
-    bool isPresentInQueue(LocalHashId hashId) const override;
+    bool isPresentInQueue(LocalTrackId hashId) const override;
 };
 
 class UserForStatisticsDisplayMock : public UserForStatisticsDisplay
@@ -116,9 +116,9 @@ class UserDataFetcherMock : public UserDataFetcher
 public:
     void enableAutoFetchForUser(quint32 userId) override;
 
-    bool checkHaveHashDataForUser(quint32 userId, LocalHashId hashId) override;
+    bool checkHaveHashDataForUser(quint32 userId, LocalTrackId hashId) override;
     HashData const* getHashDataForUser(quint32 userId,
-                                       PMP::Client::LocalHashId hashId) override;
+                                       PMP::Client::LocalTrackId hashId) override;
 };
 
 class CollectionWatcherMock : public CollectionWatcher
@@ -126,30 +126,30 @@ class CollectionWatcherMock : public CollectionWatcher
     Q_OBJECT
 public:
     void addTrack(CollectionTrackInfo track);
-    void modifyTrackTitle(LocalHashId id, QString title);
+    void modifyTrackTitle(LocalTrackId id, QString title);
 
     bool isAlbumArtistSupported() const override;
 
     void enableCollectionDownloading() override;
     bool downloadingInProgress() const override;
 
-    QHash<LocalHashId, CollectionTrackInfo> getCollection() override;
+    QHash<LocalTrackId, CollectionTrackInfo> getCollection() override;
 
-    Future<LocalHashId, AnyResultMessageCode> convertTrackHashToLocalId(
+    Future<LocalTrackId, AnyResultMessageCode> convertTrackHashToLocalId(
         FileHash const& hash) override;
     Future<FileHash, AnyResultMessageCode> convertLocalTrackIdToHash(
-        LocalHashId localId) override;
-    Nullable<LocalHashId> tryConvertTrackHashToLocalId(FileHash const& hash) override;
-    Nullable<FileHash> tryConvertLocalTrackIdToHash(LocalHashId localId) override;
+        LocalTrackId localId) override;
+    Nullable<LocalTrackId> tryConvertTrackHashToLocalId(FileHash const& hash) override;
+    Nullable<FileHash> tryConvertLocalTrackIdToHash(LocalTrackId localId) override;
 
-    Nullable<CollectionTrackInfo> getTrackFromCache(LocalHashId hashId) override;
+    Nullable<CollectionTrackInfo> getTrackFromCache(LocalTrackId hashId) override;
     Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
-                                                             LocalHashId hashId) override;
+                                                            LocalTrackId hashId) override;
     Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
                                                         FileHash const& hash) override;
 
 private:
-    QHash<LocalHashId, CollectionTrackInfo> _collection;
+    QHash<LocalTrackId, CollectionTrackInfo> _collection;
 };
 
 class ServerInterfaceMock : public PMP::Client::ServerInterface

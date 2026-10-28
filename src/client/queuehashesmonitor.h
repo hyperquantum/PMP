@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2023-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,7 +20,7 @@
 #ifndef PMP_CLIENT_QUEUEHASHESMONITOR_H
 #define PMP_CLIENT_QUEUEHASHESMONITOR_H
 
-#include "localhashid.h"
+#include "localtrackid.h"
 
 #include <QHash>
 #include <QList>
@@ -40,10 +40,10 @@ namespace PMP::Client
     public:
         virtual ~QueueHashesMonitor() {}
 
-        virtual bool isPresentInQueue(LocalHashId hashId) const = 0;
+        virtual bool isPresentInQueue(LocalTrackId hashId) const = 0;
 
     Q_SIGNALS:
-        void hashInQueuePresenceChanged(LocalHashId hashId);
+        void hashInQueuePresenceChanged(LocalTrackId hashId);
     };
 
     class QueueHashesMonitorImpl : public QueueHashesMonitor
@@ -53,7 +53,7 @@ namespace PMP::Client
         QueueHashesMonitorImpl(QObject* parent, AbstractQueueMonitor* queueMonitor,
                                QueueEntryInfoStorage* queueEntryInfoStorage);
 
-        bool isPresentInQueue(LocalHashId hashId) const override;
+        bool isPresentInQueue(LocalTrackId hashId) const override;
 
     private Q_SLOTS:
         void onQueueResetted(int queueLength);
@@ -63,13 +63,13 @@ namespace PMP::Client
         void onTracksChanged(QList<quint32> queueIds);
 
     private:
-        void associateHashWithQueueId(LocalHashId hashId, quint32 queueId, bool canAdd);
+        void associateHashWithQueueId(LocalTrackId hashId, quint32 queueId, bool canAdd);
         void disassociateHashFromQueueId(quint32 queueId, bool canRemove);
 
         AbstractQueueMonitor* _queueMonitor;
         QueueEntryInfoStorage* _queueEntryInfoStorage;
-        QHash<LocalHashId, QSet<quint32>> _hashToQueueIds;
-        QHash<quint32, LocalHashId> _queueIdToHash;
+        QHash<LocalTrackId, QSet<quint32>> _hashToQueueIds;
+        QHash<quint32, LocalTrackId> _queueIdToHash;
     };
 }
 #endif

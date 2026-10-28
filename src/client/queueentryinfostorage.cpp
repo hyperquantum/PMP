@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -35,7 +35,7 @@ namespace PMP::Client
         return title().trimmed().isEmpty() || artist().trimmed().isEmpty();
     }
 
-    void QueueEntryInfo::setHash(QueueEntryType type, LocalHashId hashId)
+    void QueueEntryInfo::setHash(QueueEntryType type, LocalTrackId hashId)
     {
         _type = type;
         _hashId = hashId;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2023-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,8 +17,8 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_CLIENT_LOCALHASHID_H
-#define PMP_CLIENT_LOCALHASHID_H
+#ifndef PMP_CLIENT_LOCALTRACKID_H
+#define PMP_CLIENT_LOCALTRACKID_H
 
 #include <QDebug>
 #include <QMetaType>
@@ -27,18 +27,18 @@
 
 namespace PMP::Client
 {
-    class LocalHashId
+    class LocalTrackId
     {
     public:
-        constexpr LocalHashId() : _id(0) {}
-        constexpr explicit LocalHashId(uint id) : _id(id) {}
+        constexpr LocalTrackId() : _id(0) {}
+        constexpr explicit LocalTrackId(uint id) : _id(id) {}
 
         constexpr uint value() const { return _id; }
         constexpr bool isZero() const { return _id == 0; }
 
-        LocalHashId& operator=(LocalHashId const&) = default;
+        LocalTrackId& operator=(LocalTrackId const&) = default;
 
-        constexpr bool operator==(LocalHashId const& other) const
+        constexpr bool operator==(LocalTrackId const& other) const
         {
             return _id == other._id;
         }
@@ -47,23 +47,23 @@ namespace PMP::Client
         uint _id;
     };
 
-    inline constexpr bool operator<(LocalHashId hashId1, LocalHashId hashId2)
+    inline constexpr bool operator<(LocalTrackId hashId1, LocalTrackId hashId2)
     {
         return hashId1.value() < hashId2.value();
     }
 
-    inline QDebug operator<<(QDebug debug, const LocalHashId id)
+    inline QDebug operator<<(QDebug debug, const LocalTrackId id)
     {
         debug << id.value();
         return debug;
     }
 
-    constexpr inline uint qHash(LocalHashId const& id, size_t seed)
+    constexpr inline uint qHash(LocalTrackId const& id, size_t seed)
     {
         return qHashMulti(seed, id.value());
     }
 }
 
-Q_DECLARE_METATYPE(PMP::Client::LocalHashId)
+Q_DECLARE_METATYPE(PMP::Client::LocalTrackId)
 
 #endif

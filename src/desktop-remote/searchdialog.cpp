@@ -256,7 +256,7 @@ namespace PMP
                 this, &SearchResultsTableModel::onHashInQueuePresenceChanged);
     }
 
-    LocalHashId SearchResultsTableModel::trackAt(const QModelIndex& index) const
+    LocalTrackId SearchResultsTableModel::trackAt(const QModelIndex& index) const
     {
         auto row = index.row();
 
@@ -266,7 +266,7 @@ namespace PMP
         return _tracks[row];
     }
 
-    void SearchResultsTableModel::setTracksList(QList<LocalHashId> tracks)
+    void SearchResultsTableModel::setTracksList(QList<LocalTrackId> tracks)
     {
         if (_tracks.size() > 0)
         {
@@ -420,7 +420,7 @@ namespace PMP
             markLeftColumnAsChanged(newIndex);
     }
 
-    void SearchResultsTableModel::onTrackAvailabilityChanged(Client::LocalHashId hashId,
+    void SearchResultsTableModel::onTrackAvailabilityChanged(Client::LocalTrackId hashId,
                                                              bool isAvailable)
     {
         Q_UNUSED(isAvailable)
@@ -443,7 +443,8 @@ namespace PMP
         markRowAsChanged(index);
     }
 
-    void SearchResultsTableModel::onHashInQueuePresenceChanged(Client::LocalHashId hashId)
+    void SearchResultsTableModel::onHashInQueuePresenceChanged(
+        Client::LocalTrackId hashId)
     {
         int index = getTrackIndex(hashId);
         if (index < 0)
@@ -452,7 +453,7 @@ namespace PMP
         markLeftColumnAsChanged(index);
     }
 
-    int SearchResultsTableModel::getTrackIndex(Client::LocalHashId trackId) const
+    int SearchResultsTableModel::getTrackIndex(Client::LocalTrackId trackId) const
     {
         auto it = _hashIdToIndex.constFind(trackId);
         if (it != _hashIdToIndex.constEnd())
@@ -461,7 +462,7 @@ namespace PMP
         return -1;
     }
 
-    QVariant SearchResultsTableModel::trackData(LocalHashId trackId, int column,
+    QVariant SearchResultsTableModel::trackData(LocalTrackId trackId, int column,
                                                 int role) const
     {
         switch (role)

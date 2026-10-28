@@ -22,7 +22,7 @@
 
 #include "common/playerhistorytrackinfo.h"
 
-#include "client/localhashid.h"
+#include "client/localtrackid.h"
 
 #include <QAbstractTableModel>
 #include <QList>
@@ -44,7 +44,7 @@ namespace PMP
     public:
         PlayerHistoryModel(QObject* parent, Client::ServerInterface* serverInterface);
 
-        Client::LocalHashId trackHashAt(int rowIndex) const;
+        Client::LocalTrackId trackHashAt(int rowIndex) const;
 
         int rowCount(const QModelIndex& parent = QModelIndex()) const override;
         int columnCount(const QModelIndex& parent = QModelIndex()) const override;

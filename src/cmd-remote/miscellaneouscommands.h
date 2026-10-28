@@ -23,7 +23,7 @@
 #include "common/filehash.h"
 #include "common/nullable.h"
 
-#include "client/localhashid.h"
+#include "client/localtrackid.h"
 
 #include "commandbase.h"
 
@@ -132,7 +132,7 @@ namespace PMP
 
     private:
         FileHash _hash;
-        Nullable<Client::LocalHashId> _localTrackId;
+        Nullable<Client::LocalTrackId> _localTrackId;
     };
 }
 #endif

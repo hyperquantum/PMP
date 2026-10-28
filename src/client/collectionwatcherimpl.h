@@ -40,18 +40,19 @@ namespace PMP::Client
         void enableCollectionDownloading() override;
         bool downloadingInProgress() const override;
 
-        QHash<LocalHashId, CollectionTrackInfo> getCollection() override;
+        QHash<LocalTrackId, CollectionTrackInfo> getCollection() override;
 
-        Future<LocalHashId, AnyResultMessageCode> convertTrackHashToLocalId(
+        Future<LocalTrackId, AnyResultMessageCode> convertTrackHashToLocalId(
                                                         FileHash const& hash) override;
         Future<FileHash, AnyResultMessageCode> convertLocalTrackIdToHash(
-            LocalHashId localId) override;
-        Nullable<LocalHashId> tryConvertTrackHashToLocalId(FileHash const& hash) override;
-        Nullable<FileHash> tryConvertLocalTrackIdToHash(LocalHashId localId) override;
+            LocalTrackId localId) override;
+        Nullable<LocalTrackId> tryConvertTrackHashToLocalId(
+            FileHash const& hash) override;
+        Nullable<FileHash> tryConvertLocalTrackIdToHash(LocalTrackId localId) override;
 
-        Nullable<CollectionTrackInfo> getTrackFromCache(LocalHashId hashId) override;
+        Nullable<CollectionTrackInfo> getTrackFromCache(LocalTrackId hashId) override;
         Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
-                                                            LocalHashId hashId) override;
+                                                            LocalTrackId hashId) override;
         Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
                                                         FileHash const& hash) override;
 
@@ -61,21 +62,21 @@ namespace PMP::Client
         void onCollectionDownloadCompleted();
         void onCollectionDownloadError();
         void onCollectionTracksAvailabilityChanged(
-                                           QVector<PMP::Client::LocalHashId> available,
-                                           QVector<PMP::Client::LocalHashId> unavailable);
+                                        QVector<PMP::Client::LocalTrackId> available,
+                                        QVector<PMP::Client::LocalTrackId> unavailable);
         void onCollectionTracksChanged(QVector<PMP::Client::CollectionTrackInfo> changes);
 
     private:
         Future<CollectionTrackInfo, AnyResultMessageCode> fetchTrackInfoFromServer(
-                                                                      LocalHashId hashId);
+                                                                    LocalTrackId hashId);
         Future<CollectionTrackInfo, AnyResultMessageCode> fetchTrackInfoFromServer(
                                                                     FileHash const& hash);
         void startDownload();
-        void updateTrackAvailability(QVector<LocalHashId> hashes, bool available);
+        void updateTrackAvailability(QVector<LocalTrackId> hashes, bool available);
         void updateTrackData(CollectionTrackInfo const& track);
 
         ServerConnection* _connection;
-        QHash<LocalHashId, CollectionTrackInfo> _collectionHash;
+        QHash<LocalTrackId, CollectionTrackInfo> _collectionHash;
         bool _autoDownload;
         bool _downloading;
     };

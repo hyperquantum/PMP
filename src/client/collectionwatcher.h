@@ -43,26 +43,26 @@ namespace PMP::Client
         virtual void enableCollectionDownloading() = 0;
         virtual bool downloadingInProgress() const = 0;
 
-        virtual QHash<LocalHashId, CollectionTrackInfo> getCollection() = 0;
+        virtual QHash<LocalTrackId, CollectionTrackInfo> getCollection() = 0;
 
-        virtual Future<LocalHashId, AnyResultMessageCode> convertTrackHashToLocalId(
+        virtual Future<LocalTrackId, AnyResultMessageCode> convertTrackHashToLocalId(
                                                                 FileHash const& hash) = 0;
         virtual Future<FileHash, AnyResultMessageCode> convertLocalTrackIdToHash(
-                                                                LocalHashId localId) = 0;
-        virtual Nullable<LocalHashId> tryConvertTrackHashToLocalId(
+                                                                LocalTrackId localId) = 0;
+        virtual Nullable<LocalTrackId> tryConvertTrackHashToLocalId(
                                                                 FileHash const& hash) = 0;
-        virtual Nullable<FileHash> tryConvertLocalTrackIdToHash(LocalHashId localId) = 0;
+        virtual Nullable<FileHash> tryConvertLocalTrackIdToHash(LocalTrackId localId) = 0;
 
-        virtual Nullable<CollectionTrackInfo> getTrackFromCache(LocalHashId hashId) = 0;
+        virtual Nullable<CollectionTrackInfo> getTrackFromCache(LocalTrackId hashId) = 0;
         virtual Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
-                                                                LocalHashId hashId) = 0;
+                                                                LocalTrackId hashId) = 0;
         virtual Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
                                                                 FileHash const& hash) = 0;
 
     Q_SIGNALS:
         void downloadingInProgressChanged();
         void newTrackReceived(CollectionTrackInfo track);
-        void trackAvailabilityChanged(LocalHashId hashId, bool isAvailable);
+        void trackAvailabilityChanged(LocalTrackId hashId, bool isAvailable);
         void trackDataChanged(CollectionTrackInfo track);
 
     protected:

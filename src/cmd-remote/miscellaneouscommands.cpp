@@ -416,7 +416,7 @@ namespace PMP
             .convertTrackHashToLocalId(_hash)
             .handleOnEventLoop(
                 this,
-                [this](ResultOrError<LocalHashId, AnyResultMessageCode> result)
+                [this](ResultOrError<LocalTrackId, AnyResultMessageCode> result)
                 {
                     if (result.failed())
                     {

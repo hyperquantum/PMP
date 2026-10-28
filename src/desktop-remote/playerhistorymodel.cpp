@@ -276,7 +276,7 @@ namespace PMP
         return Qt::CopyAction;
     }
 
-    LocalHashId PlayerHistoryModel::trackHashAt(int rowIndex) const
+    LocalTrackId PlayerHistoryModel::trackHashAt(int rowIndex) const
     {
         if (rowIndex < 0 || rowIndex >= _list.size()) return {};
 
