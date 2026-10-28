@@ -4196,6 +4196,12 @@ namespace PMP::Client
 
     void ServerConnection::parseTrackServerIdMessage(const QByteArray& message)
     {
+        if (_serverProtocolNo < 29)
+        {
+            qWarning() << "ServerConnection: received track server id message from server that is too old to know about that message";
+            return;
+        }
+
         if (message.length() != 2 + 2 + 4 + 8)
         {
             qWarning() << "ServerConnection: invalid track server ID message received: length is wrong";
@@ -4284,6 +4290,12 @@ namespace PMP::Client
 
     void ServerConnection::parseTrackInfoReply(const QByteArray& message)
     {
+        if (_serverProtocolNo < 29)
+        {
+            qWarning() << "ServerConnection: received track info reply from server that is too old to know about that message";
+            return;
+        }
+
         const int minimumMessageLength = 20 + NetworkProtocol::FILEHASH_BYTECOUNT;
 
         if (message.length() < minimumMessageLength)
