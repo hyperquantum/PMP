@@ -291,7 +291,7 @@ namespace PMP::Server
             Concurrent::runOnThreadPool<HistoryFragment, Error>(
                 globalThreadPool,
                 [trackIds, trackId, hash, userId, startId, limit]()
-                -> ResultOrError<HistoryFragment, Error>
+                    -> ResultOrError<HistoryFragment, Error>
                 {
                     auto db = Database::getDatabaseForCurrentThread();
                     if (!db)
@@ -312,9 +312,9 @@ namespace PMP::Server
                     {
                         entries.append(
                             HistoryEntry { trackId, hash, userId,
-                                         record.start, record.end,
-                                         record.permillage, record.validForScoring }
-                            );
+                                           record.start, record.end,
+                                           record.permillage, record.validForScoring }
+                        );
                     }
 
                     auto lowestId = 0;
