@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2020-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -102,7 +102,13 @@ namespace PMP::Server
         void switchToPersonalMode();
         void switchToPublicMode();
 
+        ResultOrError<uint, Error> getIdForHash(const FileHash& hash);
+
         Future<HistoryFragment, Error> getPersonalTrackHistory(FileHash hash,
+                                                               quint32 userId,
+                                                               uint startId,
+                                                               int limit);
+        Future<HistoryFragment, Error> getPersonalTrackHistory(quint64 trackId,
                                                                quint32 userId,
                                                                uint startId,
                                                                int limit);
@@ -152,8 +158,10 @@ namespace PMP::Server
         void terminateDynamicModeWave();
         void setTrackRepetitionAvoidanceSeconds(int seconds);
 
-        void requestHashUserData(quint32 userId, QVector<FileHash> hashes);
-        Future<CollectionTrackInfo, Error> getHashInfo(FileHash hash);
+        void requestTrackUserData(quint32 userId, QList<FileHash> hashes);
+        void requestTrackUserData(quint32 userId, QList<quint64> trackIds);
+        Future<CollectionTrackInfo, Error> getTrackInfo(FileHash hash);
+        Future<CollectionTrackInfo, Error> getTrackInfo(quint64 trackId);
         Nullable<FileHash> getHashForTrackId(uint trackId) const;
 
         void shutDownServer();
@@ -198,6 +206,12 @@ namespace PMP::Server
         void onHashStatisticsChanged(quint32 userId, QVector<uint> hashIds);
 
     private:
+        Future<HistoryFragment, Error> getPersonalTrackHistoryInternal(uint trackId,
+                                                                    FileHash const& hash,
+                                                                       quint32 userId,
+                                                                       uint startId,
+                                                                       int limit);
+
         int toNormalIndex(PlayerQueue const& queue, QueueIndexType indexType, int index);
         std::function<void (uint)> createQueueInsertionIdNotifier(
                                                                  quint32 clientReference);

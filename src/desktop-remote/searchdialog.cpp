@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2025-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,7 +24,6 @@
 
 #include "client/collectionwatcher.h"
 #include "client/currenttrackmonitor.h"
-#include "client/localhashidrepository.h"
 #include "client/playercontroller.h"
 #include "client/queuecontroller.h"
 #include "client/queuehashesmonitor.h"
@@ -232,7 +231,6 @@ namespace PMP
                                                 QueueHashesMonitor* queueHashesMonitor)
      : QAbstractTableModel(parent),
         _serverInterface(serverInterface),
-        _hashIdRepository(serverInterface->hashIdRepository()),
         _collectionWatcher(&serverInterface->collectionWatcher()),
         _queueHashesMonitor(queueHashesMonitor)
     {
@@ -258,7 +256,7 @@ namespace PMP
                 this, &SearchResultsTableModel::onHashInQueuePresenceChanged);
     }
 
-    LocalHashId SearchResultsTableModel::trackAt(const QModelIndex& index) const
+    LocalTrackId SearchResultsTableModel::trackAt(const QModelIndex& index) const
     {
         auto row = index.row();
 
@@ -268,7 +266,7 @@ namespace PMP
         return _tracks[row];
     }
 
-    void SearchResultsTableModel::setTracksList(QList<LocalHashId> tracks)
+    void SearchResultsTableModel::setTracksList(QList<LocalTrackId> tracks)
     {
         if (_tracks.size() > 0)
         {
@@ -367,17 +365,24 @@ namespace PMP
 
         if (indexes.isEmpty()) return nullptr;
 
-        auto hashes =
-            DragDropUtils::getHashes(
+        auto hashesOrNull =
+            DragDropUtils::tryGetHashes(
                 indexes,
                 [this](QModelIndex index)
                 {
-                    auto hashId = trackAt(index);
-                    return _hashIdRepository->getHash(hashId);
+                    auto localId = trackAt(index);
+
+                    auto hashOrNull =
+                        _collectionWatcher->tryConvertLocalTrackIdToHash(localId);
+
+                    return hashOrNull;
                 }
             );
 
-        return DragDropUtils::convertHashesToMimeData(hashes);
+        if (hashesOrNull == null)
+            return nullptr;
+
+        return DragDropUtils::convertHashesToMimeData(hashesOrNull.value());
     }
 
     void SearchResultsTableModel::onPlayerStateChanged(PlayerState playerState)
@@ -415,7 +420,7 @@ namespace PMP
             markLeftColumnAsChanged(newIndex);
     }
 
-    void SearchResultsTableModel::onTrackAvailabilityChanged(Client::LocalHashId hashId,
+    void SearchResultsTableModel::onTrackAvailabilityChanged(Client::LocalTrackId hashId,
                                                              bool isAvailable)
     {
         Q_UNUSED(isAvailable)
@@ -438,7 +443,8 @@ namespace PMP
         markRowAsChanged(index);
     }
 
-    void SearchResultsTableModel::onHashInQueuePresenceChanged(Client::LocalHashId hashId)
+    void SearchResultsTableModel::onHashInQueuePresenceChanged(
+        Client::LocalTrackId hashId)
     {
         int index = getTrackIndex(hashId);
         if (index < 0)
@@ -447,7 +453,7 @@ namespace PMP
         markLeftColumnAsChanged(index);
     }
 
-    int SearchResultsTableModel::getTrackIndex(Client::LocalHashId trackId) const
+    int SearchResultsTableModel::getTrackIndex(Client::LocalTrackId trackId) const
     {
         auto it = _hashIdToIndex.constFind(trackId);
         if (it != _hashIdToIndex.constEnd())
@@ -456,7 +462,7 @@ namespace PMP
         return -1;
     }
 
-    QVariant SearchResultsTableModel::trackData(LocalHashId trackId, int column,
+    QVariant SearchResultsTableModel::trackData(LocalTrackId trackId, int column,
                                                 int role) const
     {
         switch (role)

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -88,7 +88,7 @@ namespace PMP::Client
         return progress;
     }
 
-    LocalHashId CurrentTrackMonitorImpl::currentTrackHash() const
+    LocalTrackId CurrentTrackMonitorImpl::currentTrackHash() const
     {
         return _currentHashId;
     }
@@ -175,7 +175,7 @@ namespace PMP::Client
 
     void CurrentTrackMonitorImpl::updateTrackFields(bool isNewTrack)
     {
-        LocalHashId hashId;
+        LocalTrackId hashId;
         QString title;
         QString artist;
         QString possibleFilename;

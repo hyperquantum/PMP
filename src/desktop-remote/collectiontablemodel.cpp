@@ -24,7 +24,6 @@
 
 #include "client/collectionwatcher.h"
 #include "client/currenttrackmonitor.h"
-#include "client/localhashidrepository.h"
 #include "client/playercontroller.h"
 #include "client/queuehashesmonitor.h"
 #include "client/serverinterface.h"
@@ -98,7 +97,7 @@ namespace PMP
                                              QueueHashesMonitor* queueHashesMonitor,
                                        UserForStatisticsDisplay* userForStatisticsDisplay)
      : QAbstractTableModel(parent),
-       _hashIdRepository(serverInterface->hashIdRepository()),
+       _collectionWatcher(&serverInterface->collectionWatcher()),
        _highlightColorIndex(0),
        _sortBy(0),
        _sortOrder(Qt::AscendingOrder),
@@ -382,7 +381,7 @@ namespace PMP
         addOrUpdateTrack(track);
     }
 
-    void SortedCollectionTableModel::onTrackAvailabilityChanged(LocalHashId hashId,
+    void SortedCollectionTableModel::onTrackAvailabilityChanged(LocalTrackId hashId,
                                                                 bool isAvailable)
     {
         updateTrackAvailability(hashId, isAvailable);
@@ -394,7 +393,7 @@ namespace PMP
     }
 
     void SortedCollectionTableModel::onUserTrackDataChanged(quint32 userId,
-                                                            LocalHashId hashId)
+                                                            LocalTrackId hashId)
     {
         Q_UNUSED(userId)
         /* ignore the user ID for change notifications */
@@ -407,7 +406,7 @@ namespace PMP
                            createIndex(outerIndex, 4 - 1));
     }
 
-    void SortedCollectionTableModel::currentTrackInfoChanged(LocalHashId hashId)
+    void SortedCollectionTableModel::currentTrackInfoChanged(LocalTrackId hashId)
     {
         if (_currentTrackHash == hashId)
             return;
@@ -416,7 +415,7 @@ namespace PMP
         markLeftColumnAsChanged();
     }
 
-    void SortedCollectionTableModel::onHashInQueuePresenceChanged(LocalHashId hashId)
+    void SortedCollectionTableModel::onHashInQueuePresenceChanged(LocalTrackId hashId)
     {
         qDebug() << "hash in queue presence changed: " << hashId
                  << "present?"
@@ -469,7 +468,7 @@ namespace PMP
         }
     }
 
-    int SortedCollectionTableModel::findOuterIndexForHash(LocalHashId hashId)
+    int SortedCollectionTableModel::findOuterIndexForHash(LocalTrackId hashId)
     {
         auto innerIndex = _hashesToInnerIndexes.value(hashId, -1);
         if (innerIndex < 0)
@@ -491,7 +490,7 @@ namespace PMP
         );
     }
 
-    void SortedCollectionTableModel::updateTrackAvailability(LocalHashId hashId,
+    void SortedCollectionTableModel::updateTrackAvailability(LocalTrackId hashId,
                                                              bool isAvailable)
     {
         auto hashIterator = _hashesToInnerIndexes.find(hashId);
@@ -512,7 +511,7 @@ namespace PMP
             return;
 
         QVector<CollectionTrackInfo*> trackList;
-        QHash<LocalHashId, int> hashIndexer;
+        QHash<LocalTrackId, int> hashIndexer;
         trackList.reserve(trackCollection.size());
         hashIndexer.reserve(trackCollection.size());
 
@@ -710,7 +709,7 @@ namespace PMP
         return _tracks.at(_outerToInnerIndexMap.at(rowIndex));
     }
 
-    int SortedCollectionTableModel::trackIndex(Client::LocalHashId hashId) const
+    int SortedCollectionTableModel::trackIndex(Client::LocalTrackId hashId) const
     {
         auto it = _hashesToInnerIndexes.constFind(hashId);
         if (it == _hashesToInnerIndexes.constEnd())
@@ -871,17 +870,24 @@ namespace PMP
 
         if (indexes.isEmpty()) return nullptr;
 
-        auto hashes =
-            DragDropUtils::getHashes(
+        auto hashesOrNull =
+            DragDropUtils::tryGetHashes(
                 indexes,
                 [this](QModelIndex index)
                 {
-                    auto hashId = trackAt(index)->hashId();
-                    return _hashIdRepository->getHash(hashId);
+                    auto localId = trackAt(index)->hashId();
+
+                    auto hashOrNull =
+                        _collectionWatcher->tryConvertLocalTrackIdToHash(localId);
+
+                    return hashOrNull;
                 }
             );
 
-        return DragDropUtils::convertHashesToMimeData(hashes);
+        if (hashesOrNull == null)
+            return nullptr;
+
+        return DragDropUtils::convertHashesToMimeData(hashesOrNull.value());
     }
 
     void SortedCollectionTableModel::setHighlightColorIndex(int colorIndex)
@@ -904,6 +910,7 @@ namespace PMP
                                     QueueHashesMonitor* queueHashesMonitor,
                                     UserForStatisticsDisplay* userForStatisticsDisplay)
      : _serverInterface(serverInterface),
+       _collectionWatcher(&serverInterface->collectionWatcher()),
        _source(source),
        _searchData(searchData),
        _filteringTrackJudge(serverInterface->userDataFetcher(), *queueHashesMonitor)
@@ -923,9 +930,8 @@ namespace PMP
             }
         );
 
-        auto& collectionWatcher = serverInterface->collectionWatcher();
         connect(
-            &collectionWatcher, &CollectionWatcher::newTrackReceived,
+            _collectionWatcher, &CollectionWatcher::newTrackReceived,
             this, &FilteredCollectionTableModel::onNewTrackReceived
         );
 
@@ -965,23 +971,25 @@ namespace PMP
         auto fileHash = FileHash::tryParse(search.trimmed());
         if (!fileHash.isNull())
         {
-            // id will be zero when not found
-            auto hashId = _serverInterface->hashIdRepository()->getId(fileHash);
+            auto localIdOrNull =
+                _collectionWatcher->tryConvertTrackHashToLocalId(fileHash);
 
-            if (hashId.isZero())
+            if (localIdOrNull == null)
             {
                 // trigger server lookup of the hash
-                (void)_serverInterface->collectionWatcher().getTrackInfo(fileHash);
+                (void)_collectionWatcher->getTrackInfo(fileHash);
             }
 
+            _textFilterMode = TextFilterMode::Hash;
             _searchQuery.clear();
             _searchFileHash = fileHash;
-            _searchHashId = hashId;
+            _searchHashId = localIdOrNull;
         }
         else
         {
+            _textFilterMode = TextFilterMode::Strings;
             _searchQuery = SearchQuery(search);
-            _searchFileHash = FileHash();
+            _searchFileHash = null;
             _searchHashId = null;
         }
 
@@ -1019,15 +1027,19 @@ namespace PMP
     {
         /* See if we can finally get the LocalHashId of the FileHash that is used as the
            search query */
-        if (_searchHashId != null && _searchHashId.value().isZero()
-            && !_searchFileHash.isNull())
+        if (_textFilterMode == TextFilterMode::Hash
+            && _searchHashId == null
+            && _searchFileHash != null)
         {
-            auto fileHashOfNewTrack =
-                _serverInterface->hashIdRepository()->getHash(track.hashId());
+            auto localIdOfNewTrack = track.hashId();
 
-            if (fileHashOfNewTrack == _searchFileHash)
+            auto hashOfNewTrackOrNull =
+                _collectionWatcher->tryConvertLocalTrackIdToHash(localIdOfNewTrack);
+
+            if (hashOfNewTrackOrNull != null
+                && hashOfNewTrackOrNull.value() == _searchFileHash.value())
             {
-                _searchHashId = track.hashId();
+                _searchHashId = localIdOfNewTrack;
                 invalidateFilter();
             }
         }

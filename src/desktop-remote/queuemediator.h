@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,7 +21,7 @@
 #define PMP_QUEUEMEDIATOR_H
 
 #include "client/abstractqueuemonitor.h"
-#include "client/localhashid.h"
+#include "client/localtrackid.h"
 
 namespace PMP::Client
 {
@@ -57,7 +57,7 @@ namespace PMP
         void moveTrack(int fromIndex, int toIndex, quint32 queueID);
         void moveTrackToEnd(int fromIndex, quint32 queueId);
 
-        void insertFileAsync(int index, Client::LocalHashId hashId);
+        void insertFileAsync(int index, Client::LocalTrackId hashId);
         void duplicateEntryAsync(quint32 queueID);
         bool canDuplicateEntry(quint32 queueID) const;
 

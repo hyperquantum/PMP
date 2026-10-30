@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2024-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2024-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,7 +21,7 @@
 #define PMP_SEARCHDATA_H
 
 #include "client/collectiontrackinfo.h"
-#include "client/localhashid.h"
+#include "client/localtrackid.h"
 #include "client/searchquery.h"
 
 #include <QHash>
@@ -42,10 +42,10 @@ namespace PMP
     public:
         SearchData(QObject* parent, Client::CollectionWatcher* collectionWatcher);
 
-        bool isFileMatchForQuery(Client::LocalHashId hashId,
+        bool isFileMatchForQuery(Client::LocalTrackId hashId,
                                  Client::SearchQuery const& query) const;
 
-        QList<Client::LocalHashId> getAllMatchesForQuery(
+        QList<Client::LocalTrackId> getAllMatchesForQuery(
                                                 Client::SearchQuery const& query) const;
 
     private Q_SLOTS:
@@ -66,7 +66,7 @@ namespace PMP
         bool isTrackDataMatchForQuery(TrackSearchStrings const& trackData,
                                       Client::SearchQuery const& query) const;
 
-        QHash<Client::LocalHashId, TrackSearchStrings> _trackData;
+        QHash<Client::LocalTrackId, TrackSearchStrings> _trackData;
     };
 }
 #endif

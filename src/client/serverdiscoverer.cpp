@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2016-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,9 +21,6 @@
 
 #include "common/networkutil.h"
 
-#include "client/localhashidrepository.h"
-#include "client/trackserveridrepository.h"
-
 #include "serverconnection.h"
 
 #include <QByteArray>
@@ -38,8 +35,6 @@ namespace PMP::Client
 {
     ServerDiscoverer::ServerDiscoverer(QObject* parent)
      : QObject(parent),
-       _localHashIdRepository(new LocalHashIdRepository()),
-       _trackServerIdRepository(new TrackServerIdRepository()),
        _socket(new QUdpSocket(this)),
        _scanInProgress(false)
     {
@@ -55,12 +50,6 @@ namespace PMP::Client
                 23433, QAbstractSocket::ShareAddress | QAbstractSocket::ReuseAddressHint
               );
         if (!bound) { qDebug() << "ServerDiscoverer: BIND FAILED"; }
-    }
-
-    ServerDiscoverer::~ServerDiscoverer()
-    {
-        delete _localHashIdRepository;
-        delete _trackServerIdRepository;
     }
 
     bool ServerDiscoverer::canDoScan() const
@@ -165,8 +154,7 @@ namespace PMP::Client
             return; /* already (being) handled */
 
         _addressesBeingProbed << serverAndPort;
-        auto probe = new ServerProbe(this, serverAndPort.first, serverAndPort.second,
-                                     _localHashIdRepository, _trackServerIdRepository);
+        auto probe = new ServerProbe(this, serverAndPort.first, serverAndPort.second);
         connect(probe, &ServerProbe::foundServer, this, &ServerDiscoverer::onFoundServer);
         connect(
             probe, &ServerProbe::destroyed,
@@ -222,15 +210,11 @@ namespace PMP::Client
 
     // ============================================================================== //
 
-    ServerProbe::ServerProbe(QObject* parent, QHostAddress const& address, quint16 port,
-                             LocalHashIdRepository* localHashIdRepository,
-                             TrackServerIdRepository *trackServerIdRepository)
+    ServerProbe::ServerProbe(QObject* parent, QHostAddress const& address, quint16 port)
      : QObject(parent),
        _address(address),
        _port(port),
        _connection(new ServerConnection(this,
-                                        localHashIdRepository,
-                                        trackServerIdRepository,
                                         ServerEventSubscription::ServerHealthMessages)),
        _serverNameType(0)
     {

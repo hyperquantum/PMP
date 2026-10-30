@@ -45,13 +45,13 @@ namespace PMP::Client
 
         virtual void enableAutoFetchForUser(quint32 userId) = 0;
 
-        virtual bool checkHaveHashDataForUser(quint32 userId, LocalHashId hashId) = 0;
+        virtual bool checkHaveHashDataForUser(quint32 userId, LocalTrackId hashId) = 0;
         virtual HashData const* getHashDataForUser(quint32 userId,
-                                                   LocalHashId hashId) = 0;
+                                                   LocalTrackId hashId) = 0;
 
     Q_SIGNALS:
         void dataReceivedForUser(quint32 userId);
-        void userTrackDataChanged(quint32 userId, LocalHashId hashId);
+        void userTrackDataChanged(quint32 userId, LocalTrackId hashId);
     };
 
     struct UserDataFetcher::HashData
@@ -78,13 +78,13 @@ namespace PMP::Client
 
         void enableAutoFetchForUser(quint32 userId) override;
 
-        bool checkHaveHashDataForUser(quint32 userId, LocalHashId hashId) override;
-        HashData const* getHashDataForUser(quint32 userId, LocalHashId hashId) override;
+        bool checkHaveHashDataForUser(quint32 userId, LocalTrackId hashId) override;
+        HashData const* getHashDataForUser(quint32 userId, LocalTrackId hashId) override;
 
     private Q_SLOTS:
         //void connected();
         void onNewTrackReceived(CollectionTrackInfo track);
-        void receivedHashUserData(LocalHashId hashId, quint32 userId,
+        void receivedHashUserData(LocalTrackId hashId, quint32 userId,
                                   QDateTime previouslyHeard, qint16 scorePermillage);
         void sendPendingRequests();
         void sendPendingNotifications();
@@ -106,14 +106,14 @@ namespace PMP::Client
                 _autoFetchEnabled = newValue;
             }
 
-            HashData& getOrCreateHash(LocalHashId hashId) { return _hashes[hashId]; }
+            HashData& getOrCreateHash(LocalTrackId hashId) { return _hashes[hashId]; }
 
-            bool haveHash(LocalHashId hashId) const
+            bool haveHash(LocalTrackId hashId) const
             {
                 return _hashes.contains(hashId);
             }
 
-            HashData const* getHash(LocalHashId hashId) const
+            HashData const* getHash(LocalTrackId hashId) const
             {
                 auto it = _hashes.find(hashId);
                 if (it == _hashes.constEnd()) return nullptr;
@@ -122,16 +122,16 @@ namespace PMP::Client
             }
 
         private:
-            QHash<LocalHashId, HashData> _hashes;
+            QHash<LocalTrackId, HashData> _hashes;
             bool _autoFetchEnabled;
         };
 
-        void needToRequestData(quint32 userId, LocalHashId hashId);
+        void needToRequestData(quint32 userId, LocalTrackId hashId);
 
         CollectionWatcher* _collectionWatcher;
         ServerConnection* _connection;
         QHash<quint32, UserData> _userData;
-        QHash<quint32, QSet<LocalHashId>> _hashesToFetchForUsers;
+        QHash<quint32, QSet<LocalTrackId>> _hashesToFetchForUsers;
         QSet<quint32> _pendingNotificationsUsers;
     };
 }
