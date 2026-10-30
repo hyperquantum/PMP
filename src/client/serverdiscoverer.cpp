@@ -21,9 +21,6 @@
 
 #include "common/networkutil.h"
 
-#include "client/localhashidrepository.h"
-#include "client/trackserveridrepository.h"
-
 #include "serverconnection.h"
 
 #include <QByteArray>

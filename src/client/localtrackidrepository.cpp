@@ -17,7 +17,7 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "localhashidrepository.h"
+#include "localtrackidrepository.h"
 
 #include "common/filehash.h"
 
@@ -37,7 +37,7 @@ namespace PMP::Client
         }
     }
 
-    void LocalHashIdRepository::init(LocalTrackIdMode mode)
+    void LocalTrackIdRepository::init(LocalTrackIdMode mode)
     {
         Q_ASSERT_X(mode == LocalTrackIdMode::ServerId || mode == LocalTrackIdMode::Hash,
                    "LocalHashIdRepository::init",
@@ -53,13 +53,13 @@ namespace PMP::Client
         _initialized = true;
     }
 
-    LocalTrackIdMode LocalHashIdRepository::mode() const
+    LocalTrackIdMode LocalTrackIdRepository::mode() const
     {
         QMutexLocker lock(&_mutex);
         return _mode;
     }
 
-    LocalTrackId LocalHashIdRepository::registerTrack(TrackServerId trackId,
+    LocalTrackId LocalTrackIdRepository::registerTrack(TrackServerId trackId,
                                                      const FileHash& hash)
     {
         Q_ASSERT_X(trackId.hasValue(),
@@ -116,7 +116,7 @@ namespace PMP::Client
         }
     }
 
-    LocalTrackId LocalHashIdRepository::registerTrackByServerId(TrackServerId trackId)
+    LocalTrackId LocalTrackIdRepository::registerTrackByServerId(TrackServerId trackId)
     {
         Q_ASSERT_X(trackId.hasValue(),
                    "LocalHashIdRepository::registerTrackByServerId",
@@ -150,7 +150,7 @@ namespace PMP::Client
         return id;
     }
 
-    LocalTrackId LocalHashIdRepository::registerTrackByHash(const FileHash& hash)
+    LocalTrackId LocalTrackIdRepository::registerTrackByHash(const FileHash& hash)
     {
         Q_ASSERT_X(hash.isNull() == false,
                    "LocalHashIdRepository::registerTrack",
@@ -184,7 +184,7 @@ namespace PMP::Client
         return id;
     }
 
-    LocalTrackId LocalHashIdRepository::getIdByServerId(TrackServerId trackId)
+    LocalTrackId LocalTrackIdRepository::getIdByServerId(TrackServerId trackId)
     {
         Q_ASSERT_X(trackId.hasValue(),
                    "LocalHashIdRepository::getIdByServerId",
@@ -209,7 +209,7 @@ namespace PMP::Client
         return serverIdIt.value().localId;
     }
 
-    LocalTrackId LocalHashIdRepository::getIdByHash(const FileHash& hash)
+    LocalTrackId LocalTrackIdRepository::getIdByHash(const FileHash& hash)
     {
         Q_ASSERT_X(hash.isNull() == false,
                    "LocalHashIdRepository::getIdByHash",
@@ -234,7 +234,7 @@ namespace PMP::Client
         return hashesIt.value().localId;
     }
 
-    TrackHashOrId LocalHashIdRepository::getHashOrServerIdByLocalId(LocalTrackId id)
+    TrackHashOrId LocalTrackIdRepository::getHashOrServerIdByLocalId(LocalTrackId id)
     {
         Q_ASSERT_X(id.isZero() == false,
                    "LocalHashIdRepository::getHashOrServerIdByLocalId",
@@ -252,7 +252,7 @@ namespace PMP::Client
         }
     }
 
-    TrackServerId LocalHashIdRepository::getServerIdByLocalId(LocalTrackId id)
+    TrackServerId LocalTrackIdRepository::getServerIdByLocalId(LocalTrackId id)
     {
         Q_ASSERT_X(id.isZero() == false,
                    "LocalHashIdRepository::getServerIdByLocalId",
@@ -271,7 +271,7 @@ namespace PMP::Client
         return _localIds[id].serverId;
     }
 
-    FileHash LocalHashIdRepository::getHashByLocalId(LocalTrackId id)
+    FileHash LocalTrackIdRepository::getHashByLocalId(LocalTrackId id)
     {
         Q_ASSERT_X(id.isZero() == false,
                    "LocalHashIdRepository::getHashByLocalId",
@@ -290,7 +290,7 @@ namespace PMP::Client
         return _localIds[id].hash;
     }
 
-    LocalTrackId LocalHashIdRepository::tryGetIdByHash(const FileHash& hash)
+    LocalTrackId LocalTrackIdRepository::tryGetIdByHash(const FileHash& hash)
     {
         Q_ASSERT_X(hash.isNull() == false,
                    "LocalHashIdRepository::tryGetIdByHash",

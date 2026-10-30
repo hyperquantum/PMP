@@ -27,7 +27,7 @@
 
 #include "collectionfetcher.h"
 #include "inactivitytimer.h"
-#include "localhashidrepository.h"
+#include "localtrackidrepository.h"
 #include "servercapabilitiesimpl.h"
 #include "trackserveridrepository.h"
 
@@ -681,13 +681,13 @@ namespace PMP::Client
         {
             auto serverId = trackServerId.value();
 
-            localId = _parent->_hashIdRepository->registerTrack(serverId, _hash);
+            localId = _parent->_trackIdRepository->registerTrack(serverId, _hash);
 
             _parent->_trackServerIdRepository->registerHashWithId(_hash, serverId);
         }
         else
         {
-            localId = _parent->_hashIdRepository->registerTrackByHash(_hash);
+            localId = _parent->_trackIdRepository->registerTrackByHash(_hash);
         }
 
         CollectionTrackInfo trackInfo(localId, isAvailable, title, artist, album,
@@ -750,7 +750,7 @@ namespace PMP::Client
     {
         Q_UNUSED(clientReference)
 
-        auto localId = _parent->_hashIdRepository->registerTrack(_track, hash);
+        auto localId = _parent->_trackIdRepository->registerTrack(_track, hash);
 
         _parent->_trackServerIdRepository->registerHashWithId(hash, _track);
 
@@ -816,7 +816,7 @@ namespace PMP::Client
     ServerConnection::ServerConnection(QObject* parent,
                                        ServerEventSubscription eventSubscription)
      : QObject(parent),
-       _hashIdRepository(std::make_unique<LocalHashIdRepository>()),
+       _trackIdRepository(std::make_unique<LocalTrackIdRepository>()),
        _trackServerIdRepository(std::make_unique<TrackServerIdRepository>()),
        _serverCapabilities(new ServerCapabilitiesImpl()),
        _disconnectReason(DisconnectReason::Unknown),
@@ -1019,7 +1019,7 @@ namespace PMP::Client
                 qDebug() << "server protocol version:" << _serverProtocolNo;
                 _serverCapabilities->setServerProtocolNumber(_serverProtocolNo);
 
-                _hashIdRepository->init(
+                _trackIdRepository->init(
                     _serverCapabilities->usesServerIdsInsteadOfHashes()
                         ? LocalTrackIdMode::ServerId
                         : LocalTrackIdMode::Hash
@@ -1347,7 +1347,7 @@ namespace PMP::Client
 
     void ServerConnection::insertQueueEntryAtFront(LocalTrackId hashId)
     {
-        auto hashOrServerId = _hashIdRepository->getHashOrServerIdByLocalId(hashId);
+        auto hashOrServerId = _trackIdRepository->getHashOrServerIdByLocalId(hashId);
 
         insertQueueEntryAtFront(hashOrServerId);
     }
@@ -1387,7 +1387,7 @@ namespace PMP::Client
 
     void ServerConnection::insertQueueEntryAtEnd(LocalTrackId hashId)
     {
-        auto hashOrServerId = _hashIdRepository->getHashOrServerIdByLocalId(hashId);
+        auto hashOrServerId = _trackIdRepository->getHashOrServerIdByLocalId(hashId);
 
         insertQueueEntryAtEnd(hashOrServerId);
     }
@@ -1570,7 +1570,7 @@ namespace PMP::Client
             return signalRequestError(ResultMessageErrorCode::InvalidHash,
                                       &ServerConnection::queueEntryInsertionFailed);
 
-        auto hashOrServerId = _hashIdRepository->getHashOrServerIdByLocalId(hashId);
+        auto hashOrServerId = _trackIdRepository->getHashOrServerIdByLocalId(hashId);
 
         return insertQueueEntryAtIndex(hashOrServerId, index);
     }
@@ -1674,20 +1674,20 @@ namespace PMP::Client
     Future<LocalTrackId, AnyResultMessageCode>
         ServerConnection::convertTrackHashToLocalId(const FileHash& hash)
     {
-        if (_hashIdRepository->mode() == LocalTrackIdMode::Hash)
+        if (_trackIdRepository->mode() == LocalTrackIdMode::Hash)
         {
-            auto localId = _hashIdRepository->tryGetIdByHash(hash);
+            auto localId = _trackIdRepository->tryGetIdByHash(hash);
             if (localId.isZero() == false)
                 return FutureResult(localId);
 
-            return FutureResult(_hashIdRepository->registerTrackByHash(hash));
+            return FutureResult(_trackIdRepository->registerTrackByHash(hash));
         }
 
         auto serverIdOrNull = _trackServerIdRepository->getServerIdForHash(hash);
         if (serverIdOrNull.hasValue())
         {
             auto localId =
-                _hashIdRepository->registerTrackByServerId(serverIdOrNull.value());
+                _trackIdRepository->registerTrackByServerId(serverIdOrNull.value());
 
             return FutureResult(localId);
         }
@@ -1704,7 +1704,7 @@ namespace PMP::Client
 
                         auto serverId = outcome.result();
 
-                        return _hashIdRepository->registerTrackByServerId(serverId);
+                        return _trackIdRepository->registerTrackByServerId(serverId);
                     }
                 );
 
@@ -1714,12 +1714,12 @@ namespace PMP::Client
     Future<FileHash, AnyResultMessageCode> ServerConnection::convertLocalTrackIdToHash(
         LocalTrackId localId)
     {
-        if (_hashIdRepository->mode() == LocalTrackIdMode::Hash)
+        if (_trackIdRepository->mode() == LocalTrackIdMode::Hash)
         {
-            return FutureResult(_hashIdRepository->getHashByLocalId(localId));
+            return FutureResult(_trackIdRepository->getHashByLocalId(localId));
         }
 
-        auto trackServerId = _hashIdRepository->getServerIdByLocalId(localId);
+        auto trackServerId = _trackIdRepository->getServerIdByLocalId(localId);
 
         auto hashOrNull = _trackServerIdRepository->getHashForServerId(trackServerId);
         if (hashOrNull.hasValue())
@@ -1741,7 +1741,7 @@ namespace PMP::Client
                         return outcome.error();
 
                     auto localId = outcome.result().hashId();
-                    auto trackServerId = _hashIdRepository->getServerIdByLocalId(localId);
+                    auto trackServerId = _trackIdRepository->getServerIdByLocalId(localId);
                     auto hashOrNull =
                         _trackServerIdRepository->getHashForServerId(trackServerId);
 
@@ -1757,20 +1757,20 @@ namespace PMP::Client
     Nullable<LocalTrackId> ServerConnection::tryConvertTrackHashToLocalId(
         const FileHash& hash)
     {
-        if (_hashIdRepository->mode() == LocalTrackIdMode::Hash)
+        if (_trackIdRepository->mode() == LocalTrackIdMode::Hash)
         {
-            auto localId = _hashIdRepository->tryGetIdByHash(hash);
+            auto localId = _trackIdRepository->tryGetIdByHash(hash);
             if (localId.isZero() == false)
                 return localId;
 
-            return _hashIdRepository->registerTrackByHash(hash);
+            return _trackIdRepository->registerTrackByHash(hash);
         }
 
         auto serverIdOrNull = _trackServerIdRepository->getServerIdForHash(hash);
         if (serverIdOrNull.hasValue())
         {
             auto localId =
-                _hashIdRepository->registerTrackByServerId(serverIdOrNull.value());
+                _trackIdRepository->registerTrackByServerId(serverIdOrNull.value());
 
             return localId;
         }
@@ -1780,12 +1780,12 @@ namespace PMP::Client
 
     Nullable<FileHash> ServerConnection::tryConvertLocalTrackIdToHash(LocalTrackId localId)
     {
-        if (_hashIdRepository->mode() == LocalTrackIdMode::Hash)
+        if (_trackIdRepository->mode() == LocalTrackIdMode::Hash)
         {
-            return _hashIdRepository->getHashByLocalId(localId);
+            return _trackIdRepository->getHashByLocalId(localId);
         }
 
-        auto trackServerId = _hashIdRepository->getServerIdByLocalId(localId);
+        auto trackServerId = _trackIdRepository->getServerIdByLocalId(localId);
 
         auto hashOrNull = _trackServerIdRepository->getHashForServerId(trackServerId);
         return hashOrNull;
@@ -1794,7 +1794,7 @@ namespace PMP::Client
     Future<CollectionTrackInfo, AnyResultMessageCode> ServerConnection::getTrackInfo(
                                                                        LocalTrackId hashId)
     {
-        auto hashOrServerId = _hashIdRepository->getHashOrServerIdByLocalId(hashId);
+        auto hashOrServerId = _trackIdRepository->getHashOrServerIdByLocalId(hashId);
 
         return sendHashInfoRequest(hashOrServerId);
     }
@@ -1919,12 +1919,12 @@ namespace PMP::Client
             if (useTrackServerIdInsteadOfHash)
             {
                 NetworkUtil::append8Bytes(
-                    message, _hashIdRepository->getServerIdByLocalId(trackId).value());
+                    message, _trackIdRepository->getServerIdByLocalId(trackId).value());
             }
             else
             {
                 NetworkProtocol::appendHash(message,
-                                            _hashIdRepository->getHashByLocalId(trackId));
+                                            _trackIdRepository->getHashByLocalId(trackId));
             }
         }
 
@@ -2030,7 +2030,7 @@ namespace PMP::Client
         limit = qBound(0, limit, 255);
 
         bool useTrackServerIdInsteadOfHash =
-            _hashIdRepository->mode() == LocalTrackIdMode::ServerId;
+            _trackIdRepository->mode() == LocalTrackIdMode::ServerId;
 
         auto handler = QSharedPointer<HistoryFragmentResultHandler>::create(this);
         auto ref = registerResultHandler(handler);
@@ -2050,12 +2050,12 @@ namespace PMP::Client
         if (useTrackServerIdInsteadOfHash)
         {
             NetworkUtil::append8Bytes(
-                message, _hashIdRepository->getServerIdByLocalId(trackId).value());
+                message, _trackIdRepository->getServerIdByLocalId(trackId).value());
         }
         else
         {
             NetworkProtocol::appendHash(message,
-                                        _hashIdRepository->getHashByLocalId(trackId));
+                                        _trackIdRepository->getHashByLocalId(trackId));
         }
 
         sendBinaryMessage(message);
@@ -3604,14 +3604,14 @@ namespace PMP::Client
                 if (trackId > 0)
                 {
                     hashId =
-                        _hashIdRepository->registerTrack(TrackServerId(trackId), hash);
+                        _trackIdRepository->registerTrack(TrackServerId(trackId), hash);
 
                     _trackServerIdRepository->registerHashWithId(hash,
                                                                  TrackServerId(trackId));
                 }
                 else // server-side track ID not known
                 {
-                    hashId = _hashIdRepository->registerTrackByHash(hash);
+                    hashId = _trackIdRepository->registerTrackByHash(hash);
                 }
             }
 
@@ -3810,7 +3810,7 @@ namespace PMP::Client
                 offset += 8;
 
                 auto localTrackId =
-                    _hashIdRepository->registerTrackByServerId(TrackServerId(trackId));
+                    _trackIdRepository->registerTrackByServerId(TrackServerId(trackId));
 
                 available.append(localTrackId);
             }
@@ -3821,7 +3821,7 @@ namespace PMP::Client
                 offset += 8;
 
                 auto localTrackId =
-                    _hashIdRepository->registerTrackByServerId(TrackServerId(trackId));
+                    _trackIdRepository->registerTrackByServerId(TrackServerId(trackId));
 
                 unavailable.append(localTrackId);
             }
@@ -3844,7 +3844,7 @@ namespace PMP::Client
                 /* workaround for server bug; we shouldn't be receiving these */
                 if (hash.length() == 0) continue;
 
-                auto hashId = _hashIdRepository->registerTrackByHash(hash);
+                auto hashId = _trackIdRepository->registerTrackByHash(hash);
                 available.append(hashId);
             }
 
@@ -3864,7 +3864,7 @@ namespace PMP::Client
                 /* workaround for server bug; we shouldn't be receiving these */
                 if (hash.length() == 0) continue;
 
-                auto hashId = _hashIdRepository->registerTrackByHash(hash);
+                auto hashId = _trackIdRepository->registerTrackByHash(hash);
                 unavailable.append(hashId);
             }
         }
@@ -4062,14 +4062,14 @@ namespace PMP::Client
             LocalTrackId hashId;
             if (trackId > 0)
             {
-                hashId = _hashIdRepository->registerTrack(TrackServerId(trackId), hash);
+                hashId = _trackIdRepository->registerTrack(TrackServerId(trackId), hash);
 
                 _trackServerIdRepository->registerHashWithId(hash,
                                                              TrackServerId(trackId));
             }
             else // server-side track ID not known
             {
-                hashId = _hashIdRepository->registerTrackByHash(hash);
+                hashId = _trackIdRepository->registerTrackByHash(hash);
             }
 
             CollectionTrackInfo info(hashId, availabilityByte & 1, title, artist, album,
@@ -4145,7 +4145,7 @@ namespace PMP::Client
             {
                 quint64 trackId = NetworkUtil::get8Bytes(message, offset);
                 localId =
-                    _hashIdRepository->registerTrackByServerId(TrackServerId(trackId));
+                    _trackIdRepository->registerTrackByServerId(TrackServerId(trackId));
                 offset += 8;
             }
             else
@@ -4156,7 +4156,7 @@ namespace PMP::Client
 
                 if (hash.isNull() == false)
                 {
-                    localId = _hashIdRepository->registerTrackByHash(hash);
+                    localId = _trackIdRepository->registerTrackByHash(hash);
                 }
             }
 
@@ -4415,7 +4415,7 @@ namespace PMP::Client
             if (hashNoLongerIncluded)
             {
                 localId =
-                    _hashIdRepository->registerTrackByServerId(TrackServerId(trackId));
+                    _trackIdRepository->registerTrackByServerId(TrackServerId(trackId));
             }
             else
             {
@@ -4429,14 +4429,14 @@ namespace PMP::Client
                 if (trackId > 0)
                 {
                     localId =
-                        _hashIdRepository->registerTrack(TrackServerId(trackId), hash);
+                        _trackIdRepository->registerTrack(TrackServerId(trackId), hash);
 
                     _trackServerIdRepository->registerHashWithId(hash,
                                                                  TrackServerId(trackId));
                 }
                 else
                 {
-                    localId = _hashIdRepository->registerTrackByHash(hash);
+                    localId = _trackIdRepository->registerTrackByHash(hash);
                 }
             }
 

@@ -34,7 +34,6 @@ QT_FORWARD_DECLARE_CLASS(QTimer)
 
 namespace PMP::Client
 {
-    class LocalHashIdRepository;
     class QueueHashesMonitor;
     class ServerConnection;
     class ServerInterface;

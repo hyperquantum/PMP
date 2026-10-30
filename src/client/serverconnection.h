@@ -59,7 +59,7 @@ namespace PMP::Client
 {
     class CollectionFetcher;
     class InactivityTimer;
-    class LocalHashIdRepository;
+    class LocalTrackIdRepository;
     class ServerCapabilities;
     class ServerCapabilitiesImpl;
     class TrackServerIdRepository;
@@ -437,7 +437,7 @@ namespace PMP::Client
 
         static const quint16 ClientProtocolNo;
 
-        std::unique_ptr<LocalHashIdRepository> _hashIdRepository;
+        std::unique_ptr<LocalTrackIdRepository> _trackIdRepository;
         std::unique_ptr<TrackServerIdRepository> _trackServerIdRepository;
         ServerCapabilitiesImpl* _serverCapabilities;
         DisconnectReason _disconnectReason;

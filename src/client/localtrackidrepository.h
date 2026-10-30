@@ -17,8 +17,8 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_CLIENT_LOCALHASHIDREPOSITORY_H
-#define PMP_CLIENT_LOCALHASHIDREPOSITORY_H
+#ifndef PMP_CLIENT_LOCALTRACKIDREPOSITORY_H
+#define PMP_CLIENT_LOCALTRACKIDREPOSITORY_H
 
 #include "common/filehash.h"
 
@@ -33,7 +33,7 @@ namespace PMP::Client
 {
     enum class LocalTrackIdMode { ServerId, Hash };
 
-    class LocalHashIdRepository
+    class LocalTrackIdRepository
     {
     public:
         void init(LocalTrackIdMode mode);
