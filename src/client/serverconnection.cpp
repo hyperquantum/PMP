@@ -4196,7 +4196,7 @@ namespace PMP::Client
 
     void ServerConnection::parseTrackServerIdMessage(const QByteArray& message)
     {
-        if (_serverProtocolNo < 29)
+        if (!_serverCapabilities->usesServerIdsInsteadOfHashes())
         {
             qWarning() << "ServerConnection: received track server id message from server that is too old to know about that message";
             return;
@@ -4290,7 +4290,7 @@ namespace PMP::Client
 
     void ServerConnection::parseTrackInfoReply(const QByteArray& message)
     {
-        if (_serverProtocolNo < 29)
+        if (!_serverCapabilities->usesServerIdsInsteadOfHashes())
         {
             qWarning() << "ServerConnection: received track info reply from server that is too old to know about that message";
             return;
