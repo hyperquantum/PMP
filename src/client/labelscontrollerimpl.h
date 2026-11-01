@@ -40,15 +40,15 @@ namespace PMP::Client
     public:
         explicit LabelsControllerImpl(ServerConnection* connection);
 
-        SimpleFuture<AnyResultMessageCode> applyLabelToTrack(LocalHashId hashId,
+        SimpleFuture<AnyResultMessageCode> applyLabelToTrack(LocalTrackId trackId,
                                                              QString label) override;
-        SimpleFuture<AnyResultMessageCode> removeLabelFromTrack(LocalHashId hashId,
+        SimpleFuture<AnyResultMessageCode> removeLabelFromTrack(LocalTrackId trackId,
                                                                 QString label) override;
 
         Future<QList<QString>, AnyResultMessageCode> getLabelNamesByTrack(
-            LocalHashId hashId) override;
+            LocalTrackId trackId) override;
         Future<QList<LabelIdAndName>, AnyResultMessageCode> getLabelsByTrack(
-            LocalHashId hashId) override;
+            LocalTrackId trackId) override;
 
         Future<QHash<quint32,QString>, AnyResultMessageCode> getLabelNamesByIds(
             QList<quint32> labelIds) override;
@@ -57,11 +57,11 @@ namespace PMP::Client
         Future<QList<LabelIdAndName>, AnyResultMessageCode> getActiveLabels() override;
 
     private Q_SLOTS:
-        void onTrackLabelsChanged(LocalHashId hashId, QList<quint32> labelsAddedIds,
+        void onTrackLabelsChanged(LocalTrackId trackId, QList<quint32> labelsAddedIds,
                                   QList<quint32> labelsRemovedIds);
 
     private:
-        struct HashLabelsData
+        struct TrackLabelsData
         {
             Nullable<Future<QSet<quint32>, AnyResultMessageCode>> futureForFetching;
             QSet<quint32> labelIds;
@@ -71,12 +71,12 @@ namespace PMP::Client
         struct LabelData
         {
             QString name;
-            QSet<LocalHashId> hashes;
+            QSet<LocalTrackId> tracks;
             bool hashesFetched { false };
         };
 
         Future<QSet<quint32>, AnyResultMessageCode> getLabelsByTrackInternal(
-            LocalHashId hashId);
+            LocalTrackId hashId);
 
         Future<QList<quint32>, AnyResultMessageCode> getActiveLabelsInternal();
 
@@ -106,7 +106,7 @@ namespace PMP::Client
         ServerConnection* _connection;
         QHash<quint32, LabelData> _labelData;
         QHash<QString, quint32> _labelNameToId;
-        QHash<LocalHashId, HashLabelsData> _hashData;
+        QHash<LocalTrackId, TrackLabelsData> _trackData;
     };
 }
 #endif

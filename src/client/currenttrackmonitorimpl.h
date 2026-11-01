@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -42,7 +42,7 @@ namespace PMP::Client
         quint32 currentQueueId() const override;
         qint64 currentTrackProgressMilliseconds() const override;
 
-        LocalHashId currentTrackHash() const override;
+        LocalTrackId currentTrackHash() const override;
 
         QString currentTrackTitle() const override;
         QString currentTrackArtist() const override;
@@ -72,7 +72,7 @@ namespace PMP::Client
         quint32 _currentQueueId;
         QElapsedTimer _progressTimer;
         qint64 _progressAtTimerStart;
-        LocalHashId _currentHashId;
+        LocalTrackId _currentHashId;
         bool _haveReceivedCurrentTrack;
         QString _currentTrackTitle;
         QString _currentTrackArtist;

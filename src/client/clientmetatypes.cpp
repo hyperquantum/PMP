@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2023-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -18,7 +18,7 @@
 */
 
 #include "collectiontrackinfo.h"
-#include "localhashid.h"
+#include "localtrackid.h"
 #include "trackserverid.h"
 
 namespace PMP::Client
@@ -31,7 +31,7 @@ namespace PMP::Client
         ClientMetatypesInit()
         {
             qRegisterMetaType<PMP::Client::CollectionTrackInfo>();
-            qRegisterMetaType<PMP::Client::LocalHashId>();
+            qRegisterMetaType<PMP::Client::LocalTrackId>();
             qRegisterMetaType<PMP::Client::TrackServerId>();
         }
 

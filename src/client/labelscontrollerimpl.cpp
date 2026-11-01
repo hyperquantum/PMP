@@ -37,21 +37,21 @@ namespace PMP::Client
     }
 
     SimpleFuture<AnyResultMessageCode> LabelsControllerImpl::applyLabelToTrack(
-        LocalHashId hashId, QString label)
+        LocalTrackId trackId, QString label)
     {
-        return _connection->applyLabelToTrack(hashId, label);
+        return _connection->applyLabelToTrack(trackId, label);
     }
 
     SimpleFuture<AnyResultMessageCode> LabelsControllerImpl::removeLabelFromTrack(
-        LocalHashId hashId, QString label)
+        LocalTrackId trackId, QString label)
     {
-        return _connection->removeLabelFromTrack(hashId, label);
+        return _connection->removeLabelFromTrack(trackId, label);
     }
 
     Future<QList<QString>, AnyResultMessageCode>
-        LabelsControllerImpl::getLabelNamesByTrack(LocalHashId hashId)
+        LabelsControllerImpl::getLabelNamesByTrack(LocalTrackId trackId)
     {
-        auto idsFuture = getLabelsByTrackInternal(hashId);
+        auto idsFuture = getLabelsByTrackInternal(trackId);
 
         auto namesFuture =
             idsFuture
@@ -72,9 +72,9 @@ namespace PMP::Client
     }
 
     Future<QList<LabelIdAndName>, AnyResultMessageCode>
-        LabelsControllerImpl::getLabelsByTrack(LocalHashId hashId)
+        LabelsControllerImpl::getLabelsByTrack(LocalTrackId trackId)
     {
-        auto idsFuture = getLabelsByTrackInternal(hashId);
+        auto idsFuture = getLabelsByTrackInternal(trackId);
 
         auto idAndNamesFuture =
             idsFuture
@@ -146,11 +146,11 @@ namespace PMP::Client
         return idAndNamesFuture;
     }
 
-    void LabelsControllerImpl::onTrackLabelsChanged(LocalHashId hashId,
+    void LabelsControllerImpl::onTrackLabelsChanged(LocalTrackId trackId,
                                                     QList<quint32> labelsAddedIds,
                                                     QList<quint32> labelsRemovedIds)
     {
-        auto& currentLabelIds = _hashData[hashId].labelIds;
+        auto& currentLabelIds = _trackData[trackId].labelIds;
 
         auto labelsReallyAdded =
             ContainerUtil::elementsOfListNotInSet(labelsAddedIds, currentLabelIds);
@@ -180,21 +180,21 @@ namespace PMP::Client
 
         for (auto labelId : labelsReallyAdded)
         {
-            _labelData[labelId].hashes << hashId;
+            _labelData[labelId].tracks << trackId;
         }
 
         for (auto labelId : labelsReallyRemoved)
         {
-            _labelData[labelId].hashes.remove(hashId);
+            _labelData[labelId].tracks.remove(trackId);
         }
 
-        Q_EMIT trackLabelsChanged(hashId);
+        Q_EMIT trackLabelsChanged(trackId);
     }
 
     Future<QSet<quint32>, AnyResultMessageCode>
-        LabelsControllerImpl::getLabelsByTrackInternal(LocalHashId hashId)
+        LabelsControllerImpl::getLabelsByTrackInternal(LocalTrackId trackId)
     {
-        auto& hashData = _hashData[hashId];
+        auto& hashData = _trackData[trackId];
 
         if (hashData.fetched)
         {
@@ -205,10 +205,10 @@ namespace PMP::Client
             return hashData.futureForFetching.value();
 
         auto future =
-            _connection->getLabelsOfTrack(hashId)
+            _connection->getLabelsOfTrack(trackId)
                 .thenOnEventLoop<QSet<quint32>, AnyResultMessageCode>(
                     this,
-                    [this, hashId](
+                    [this, trackId](
                             ResultOrError<QList<quint32>, AnyResultMessageCode> outcome)
                         -> ResultOrError<QSet<quint32>, AnyResultMessageCode>
                     {
@@ -217,17 +217,17 @@ namespace PMP::Client
 
                         auto labelIdsAsSet = ContainerUtil::toSet(outcome.result());
 
-                        auto& hashData = _hashData[hashId];
+                        auto& hashData = _trackData[trackId];
                         hashData.labelIds = labelIdsAsSet;
                         hashData.futureForFetching = null;
                         hashData.fetched = true;
 
                         for (auto labelId : hashData.labelIds)
                         {
-                            _labelData[labelId].hashes << hashId;
+                            _labelData[labelId].tracks << trackId;
                         }
 
-                        Q_EMIT trackLabelsChanged(hashId);
+                        Q_EMIT trackLabelsChanged(trackId);
 
                         return labelIdsAsSet;
                     }

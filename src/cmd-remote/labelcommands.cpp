@@ -19,8 +19,9 @@
 
 #include "labelcommands.h"
 
+#include "client/collectionwatcher.h"
 #include "client/labelscontroller.h"
-#include "client/localhashidrepository.h"
+#include "client/localtrackidrepository.h"
 #include "client/serverinterface.h"
 
 #include <algorithm>
@@ -39,10 +40,26 @@ namespace PMP
 
     void LabelAddCommand::run(ServerInterface* serverInterface)
     {
-        auto hashId = serverInterface->hashIdRepository()->getOrRegisterId(_hash);
-
         auto future =
-            serverInterface->labelsController().applyLabelToTrack(hashId, _name);
+            serverInterface->collectionWatcher()
+                .convertTrackHashToLocalId(_hash)
+                .thenOnEventLoopIndirectSimple<AnyResultMessageCode>(
+                    serverInterface,
+                    [this, serverInterface](
+                        ResultOrError<LocalTrackId, AnyResultMessageCode> outcome)
+                        -> SimpleFuture<AnyResultMessageCode>
+                    {
+                        if (outcome.failed())
+                            return FutureResult(outcome.error());
+
+                        auto localTrackId = outcome.result();
+
+                        return
+                            serverInterface->labelsController().applyLabelToTrack(
+                                localTrackId, _name
+                            );
+                    }
+                );
 
         setCommandExecutionResultFuture(future);
     }
@@ -57,10 +74,26 @@ namespace PMP
 
     void LabelRemoveCommand::run(Client::ServerInterface* serverInterface)
     {
-        auto hashId = serverInterface->hashIdRepository()->getOrRegisterId(_hash);
-
         auto future =
-            serverInterface->labelsController().removeLabelFromTrack(hashId, _name);
+            serverInterface->collectionWatcher()
+                .convertTrackHashToLocalId(_hash)
+                .thenOnEventLoopIndirectSimple<AnyResultMessageCode>(
+                    serverInterface,
+                    [this, serverInterface](
+                        ResultOrError<LocalTrackId, AnyResultMessageCode> outcome)
+                        -> SimpleFuture<AnyResultMessageCode>
+                    {
+                        if (outcome.failed())
+                            return FutureResult(outcome.error());
+
+                        auto localTrackId = outcome.result();
+
+                        return
+                            serverInterface->labelsController().removeLabelFromTrack(
+                                localTrackId, _name
+                            );
+                    }
+                );
 
         setCommandExecutionResultFuture(future);
     }
@@ -75,13 +108,29 @@ namespace PMP
 
     void LabelListForHashCommand::run(Client::ServerInterface* serverInterface)
     {
-        auto hashId = serverInterface->hashIdRepository()->getOrRegisterId(_hash);
+        auto future =
+            serverInterface->collectionWatcher()
+                .convertTrackHashToLocalId(_hash)
+                .thenOnEventLoopIndirect<QList<QString>, AnyResultMessageCode>(
+                    serverInterface,
+                    [serverInterface](
+                        ResultOrError<LocalTrackId, AnyResultMessageCode> outcome)
+                        -> Future<QList<QString>, AnyResultMessageCode>
+                    {
+                        if (outcome.failed())
+                            return FutureError(outcome.error());
 
-        auto labelNamesFuture =
-            serverInterface->labelsController().getLabelNamesByTrack(hashId);
+                        auto localTrackId = outcome.result();
+
+                        return
+                            serverInterface->labelsController().getLabelNamesByTrack(
+                                localTrackId
+                            );
+                    }
+                );
 
         handleFailureAndResult<QList<QString>>(
-            labelNamesFuture,
+            future,
             [this](QList<QString> labelNames)
             {
                 printLabelNames(labelNames);

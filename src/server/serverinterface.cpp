@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2020-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -240,11 +240,24 @@ namespace PMP::Server
         _player->setUserPlayingFor(0);
     }
 
+    ResultOrError<uint, Error> ServerInterface::getIdForHash(FileHash const& hash)
+    {
+        auto idOrNull = _hashIdRegistrar->getIdForHash(hash);
+
+        if (idOrNull == null)
+            return Error::hashIsUnknown();
+
+        return idOrNull.value();
+    }
+
     Future<HistoryFragment, Error> ServerInterface::getPersonalTrackHistory(
         FileHash hash, quint32 userId, uint startId, int limit)
     {
         if (!isLoggedIn())
             return Error::notLoggedIn();
+
+        if (userId != 0 && !_users->checkUserIdExists(userId))
+            return Error::userIdNotFound();
 
         if (hash.isNull())
             return Error::hashIsNull();
@@ -255,10 +268,35 @@ namespace PMP::Server
 
         auto trackId = maybeTrackId.value();
 
-        auto trackIds = _hashRelations->getEquivalencyGroup(trackId);
+        return getPersonalTrackHistoryInternal(trackId, hash, userId, startId, limit);
+    }
+
+    Future<HistoryFragment, Error> ServerInterface::getPersonalTrackHistory(
+        quint64 trackId, quint32 userId, uint startId, int limit)
+    {
+        if (!isLoggedIn())
+            return Error::notLoggedIn();
 
         if (userId != 0 && !_users->checkUserIdExists(userId))
             return Error::userIdNotFound();
+
+        if (trackId == 0)
+            return Error::trackIdIsZero();
+
+        auto hashOrNull = _hashIdRegistrar->getHashForId(trackId);
+        if (hashOrNull == null)
+            return Error::trackIdIsUnknown();
+
+        auto hash = hashOrNull.value();
+
+        return getPersonalTrackHistoryInternal((uint)trackId, hash, userId,
+                                               startId, limit);
+    }
+
+    Future<HistoryFragment, Error> ServerInterface::getPersonalTrackHistoryInternal(
+        uint trackId, const FileHash& hash, quint32 userId, uint startId, int limit)
+    {
+        auto trackIds = _hashRelations->getEquivalencyGroup(trackId);
 
         limit = qBound(0, limit, 50);
 
@@ -661,7 +699,7 @@ namespace PMP::Server
         _generator->setNoRepetitionSpanSeconds(seconds);
     }
 
-    void ServerInterface::requestHashUserData(quint32 userId, QVector<FileHash> hashes)
+    void ServerInterface::requestTrackUserData(quint32 userId, QList<FileHash> hashes)
     {
         if (!isLoggedIn()) return;
 
@@ -671,7 +709,7 @@ namespace PMP::Server
         /* we make sure not to trigger registration of unknown hashes */
         const auto existingHashes = _hashIdRegistrar->getExistingIdsOnly(hashes);
 
-        QVector<HashStats> hashStatsAlreadyAvailable;
+        QList<HashStats> hashStatsAlreadyAvailable;
         hashStatsAlreadyAvailable.reserve(existingHashes.size());
 
         for (auto const& idAndHash : existingHashes)
@@ -680,7 +718,7 @@ namespace PMP::Server
             if (statsOrNull == null)
                 continue; /* stats will arrive after a delay */
 
-            HashStats stats(idAndHash.second, statsOrNull.value());
+            HashStats stats(idAndHash.first, idAndHash.second, statsOrNull.value());
             hashStatsAlreadyAvailable.append(stats);
         }
 
@@ -689,7 +727,34 @@ namespace PMP::Server
             Q_EMIT hashUserDataChangedOrAvailable(userId, hashStatsAlreadyAvailable);
     }
 
-    Future<CollectionTrackInfo, Error> ServerInterface::getHashInfo(FileHash hash)
+    void ServerInterface::requestTrackUserData(quint32 userId, QList<quint64> trackIds)
+    {
+        if (!isLoggedIn()) return;
+
+        if (userId != 0 && !_users->checkUserIdExists(userId))
+            return;
+
+        const auto existingIds = _hashIdRegistrar->getExistingIdsOnly(trackIds);
+
+        QList<HashStats> hashStatsAlreadyAvailable;
+        hashStatsAlreadyAvailable.reserve(existingIds.size());
+
+        for (auto const& idAndHash : existingIds)
+        {
+            auto statsOrNull = _history->getUserStats(idAndHash.first, userId);
+            if (statsOrNull == null)
+                continue; /* stats will arrive after a delay */
+
+            HashStats stats(idAndHash.first, idAndHash.second, statsOrNull.value());
+            hashStatsAlreadyAvailable.append(stats);
+        }
+
+        /* if possible, reply immediately with the information that is already known */
+        if (!hashStatsAlreadyAvailable.isEmpty())
+            Q_EMIT hashUserDataChangedOrAvailable(userId, hashStatsAlreadyAvailable);
+    }
+
+    Future<CollectionTrackInfo, Error> ServerInterface::getTrackInfo(FileHash hash)
     {
         /* note: client does not need to be logged in for this */
 
@@ -700,9 +765,26 @@ namespace PMP::Server
         if (maybeHashId == null)
             return Error::hashIsUnknown();
 
-        auto hashInfo = _player->resolver().getHashTrackInfo(maybeHashId.value());
+        auto trackInfo = _player->resolver().getHashTrackInfo(maybeHashId.value());
 
-        return FutureResult(hashInfo);
+        return FutureResult(trackInfo);
+    }
+
+    Future<CollectionTrackInfo, Error> ServerInterface::getTrackInfo(quint64 trackId)
+    {
+        /* note: client does not need to be logged in for this */
+
+        if (trackId == 0)
+            return Error::trackIdIsZero();
+
+        uint trackId2 = (uint)trackId; // may truncate
+
+        auto trackInfo = _player->resolver().getHashTrackInfo(trackId2);
+
+        if (trackInfo.trackId() != trackId)
+            return Error::trackIdIsUnknown(); // ID truncated or simply unknown
+
+        return FutureResult(trackInfo);
     }
 
     Nullable<FileHash> ServerInterface::getHashForTrackId(uint trackId) const
@@ -710,43 +792,50 @@ namespace PMP::Server
         return _hashIdRegistrar->getHashForId(trackId);
     }
 
-    SimpleFuture<Result> ServerInterface::applyLabelToTrack(FileHash hash,
+    SimpleFuture<Result> ServerInterface::applyLabelToTrack(quint64 trackId,
                                                             const QString& label)
     {
         if (!isLoggedIn())
             return Error::notLoggedIn();
 
-        auto maybeHashId = _hashIdRegistrar->getIdForHash(hash);
-        if (maybeHashId == null)
-            return Error::hashIsUnknown();
+        if (trackId == 0)
+            return Error::trackIdIsZero();
 
-        return _labels->applyLabelToTrack(maybeHashId.value(), label);
+        if (!_hashIdRegistrar->isRegisteredId(trackId))
+            return Error::trackIdIsUnknown();
+
+        return _labels->applyLabelToTrack(trackId, label);
     }
 
-    SimpleFuture<Result> ServerInterface::removeLabelFromTrack(FileHash hash,
+    SimpleFuture<Result> ServerInterface::removeLabelFromTrack(quint64 trackId,
                                                                const QString& label)
     {
         if (!isLoggedIn())
             return Error::notLoggedIn();
 
-        auto maybeHashId = _hashIdRegistrar->getIdForHash(hash);
-        if (maybeHashId == null)
-            return Error::hashIsUnknown();
+        if (trackId == 0)
+            return Error::trackIdIsZero();
 
-        return _labels->removeLabelFromTrack(maybeHashId.value(), label);
+        if (!_hashIdRegistrar->isRegisteredId(trackId))
+            return Error::trackIdIsUnknown();
+
+        return _labels->removeLabelFromTrack(trackId, label);
     }
 
-    ResultOrError<QList<quint32>, Error> ServerInterface::getLabelsOfTrack(FileHash hash)
+    ResultOrError<QList<quint32>, Error> ServerInterface::getLabelsOfTrack(
+                                                                        quint64 trackId)
     {
         /* require authentication for now, maybe we'll change this in the future */
         if (!isLoggedIn())
             return Error::notLoggedIn();
 
-        auto maybeHashId = _hashIdRegistrar->getIdForHash(hash);
-        if (maybeHashId == null)
-            return Error::hashIsUnknown();
+        if (trackId == 0)
+            return Error::trackIdIsZero();
 
-        return _labels->getLabelsOfTrack(maybeHashId.value());
+        if (!_hashIdRegistrar->isRegisteredId(trackId))
+            return Error::trackIdIsUnknown();
+
+        return _labels->getLabelsOfTrack(trackId);
     }
 
     ResultOrError<QHash<quint32, QString>, Error> ServerInterface::getLabelNames(
@@ -879,30 +968,14 @@ namespace PMP::Server
         addUserHashDataNotification(userId, hashIds);
     }
 
-    void ServerInterface::onTrackLabelsAdded(uint trackHashId, QList<quint32> labelIds)
+    void ServerInterface::onTrackLabelsAdded(uint trackId, QList<quint32> labelIds)
     {
-        auto hashOrNull = _hashIdRegistrar->getHashForId(trackHashId);
-        if (hashOrNull == null)
-        {
-            qWarning() << "ServerInterface: could not get hash for hash ID"
-                       << trackHashId;
-            return;
-        }
-
-        Q_EMIT trackLabelsAdded(hashOrNull.value(), labelIds);
+        Q_EMIT trackLabelsAdded(trackId, labelIds);
     }
 
-    void ServerInterface::onTrackLabelsRemoved(uint trackHashId, QList<quint32> labelIds)
+    void ServerInterface::onTrackLabelsRemoved(uint trackId, QList<quint32> labelIds)
     {
-        auto hashOrNull = _hashIdRegistrar->getHashForId(trackHashId);
-        if (hashOrNull == null)
-        {
-            qWarning() << "ServerInterface: could not get hash for hash ID"
-                       << trackHashId;
-            return;
-        }
-
-        Q_EMIT trackLabelsRemoved(hashOrNull.value(), labelIds);
+        Q_EMIT trackLabelsRemoved(trackId, labelIds);
     }
 
     int ServerInterface::toNormalIndex(const PlayerQueue& queue,
@@ -981,7 +1054,9 @@ namespace PMP::Server
                     continue;
                 }
 
-                statsToSend.append(HashStats(hashOrNull.value(), statsOrNull.value()));
+                statsToSend.append(
+                    HashStats(hashId, hashOrNull.value(), statsOrNull.value())
+                );
             }
         }
 

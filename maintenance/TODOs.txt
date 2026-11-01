@@ -31,6 +31,7 @@ IDEAS
 
  * server: server executable with (limited) user interface for easy usage on desktop platforms (like Minecraft)
  * server: add option that prevents the server machine from going into sleep mode while there are clients connected
+ * server: add maximum file size for files to be considered for indexation
  * UI: move server selection, user account creation and authentication to pop-up dialogs
  ** UI: display the title/artist of the track currently playing in the window title of the remote
  * UI: in table views: hide selection when losing focus
@@ -76,7 +77,9 @@ IDEAS
  * play history: add context: was there no user interaction for a long time?
  * music collection: provide general statistics (e.g. total number of files present, number of hashes with a file...)
  * music collection: new action: add track before first interruption (break/barrier)
+ * music collection: new action to select the first occurrence of that track in the queue
  * music collection: new filter criterium "without album artist"
+ * music collection: new filter criterium "in the queue or current track"
  * music collection: quick indexation action that only examines files that are new or appear to have changed
  * music collection: add list of all artists/albums
  * music collection: detect different rips of the same track/album and treat them as one, with unified scores
@@ -127,7 +130,6 @@ NON-FUNCTIONAL IMPROVEMENTS
  * use libgroove for playback (?)
  * use macro QT_ENABLE_STRICT_MODE_UP_TO
  * replace all usages of QVector with QList
- * no longer strip ID3v2 during preprocessing for playback
  * use Ninja in the build scripts
  * refactor result handlers in ServerConnection class
  * add ClangFormat file

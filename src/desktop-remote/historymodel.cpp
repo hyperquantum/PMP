@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2024-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -31,7 +31,7 @@ using namespace PMP::Client;
 
 namespace PMP
 {
-    HistoryModel::HistoryModel(QObject* parent, uint userId, LocalHashId hashId,
+    HistoryModel::HistoryModel(QObject* parent, uint userId, LocalTrackId hashId,
                                ServerInterface* serverInterface)
      : QAbstractTableModel(parent),
        _serverInterface(serverInterface),
@@ -69,12 +69,12 @@ namespace PMP
         reload();
     }
 
-    LocalHashId HistoryModel::track() const
+    LocalTrackId HistoryModel::track() const
     {
         return _hashId;
     }
 
-    void HistoryModel::setTrack(Client::LocalHashId hashId)
+    void HistoryModel::setTrack(Client::LocalTrackId hashId)
     {
         if (_hashId == hashId)
             return;

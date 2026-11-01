@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2024-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2024-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,7 +24,6 @@
 #include "resultorerror.h"
 #include "runners.h"
 
-// NewFutureStorage
 #include <QMutex>
 #include <QSharedPointer>
 
@@ -334,6 +333,10 @@ namespace PMP
         Future<TResult2, TError2> thenOnEventLoopIndirect(QObject* receiver,
             std::function<Future<TResult2, TError2>(OutcomeType)> f);
 
+        template<class TOutcome2>
+        SimpleFuture<TOutcome2> thenOnEventLoopIndirectSimple(QObject* receiver,
+            std::function<SimpleFuture<TOutcome2>(OutcomeType)> f);
+
         template<class TResult2, class TError2>
         Future<TResult2, TError2> thenOnAnyThread(
             std::function<ResultOrError<TResult2, TError2>(OutcomeType)> f);
@@ -378,6 +381,11 @@ namespace PMP
         SimpleFuture<TOutcome2> setUpContinuationToRunnerForSimpleFuture(
             QSharedPointer<Runner> runner,
             std::function<TOutcome2(OutcomeType)> f);
+
+        template<class TOutcome2>
+        SimpleFuture<TOutcome2> setUpContinuationToRunnerForSimpleFutureIndirect(
+            QSharedPointer<Runner> runner,
+            std::function<SimpleFuture<TOutcome2>(OutcomeType)> f);
 
         template<class, class> friend class Future;
         friend class Promise<TResult, TError>;
@@ -449,6 +457,18 @@ namespace PMP
         auto runner = QSharedPointer<EventLoopRunner>::create(receiver);
 
         return setUpContinuationToRunnerIndirect<TResult2, TError2>(runner, f);
+    }
+
+    template<class TResult, class TError>
+    template<class TOutcome2>
+    SimpleFuture<TOutcome2>
+        Future<TResult, TError>::thenOnEventLoopIndirectSimple(
+            QObject* receiver,
+            std::function<SimpleFuture<TOutcome2>(OutcomeType)> f)
+    {
+        auto runner = QSharedPointer<EventLoopRunner>::create(receiver);
+
+        return setUpContinuationToRunnerForSimpleFutureIndirect(runner, f);
     }
 
     template<class TResult, class TError>
@@ -640,6 +660,36 @@ namespace PMP
         _storage->addContinuation(continuation);
 
         return SimpleFuture<TOutcome2>(storage);
+    }
+
+    template<class TResult, class TError>
+    template<class TOutcome2>
+    SimpleFuture<TOutcome2>
+        Future<TResult, TError>::setUpContinuationToRunnerForSimpleFutureIndirect(
+            QSharedPointer<Runner> runner,
+            std::function<SimpleFuture<TOutcome2>(OutcomeType)> f)
+    {
+        using Storage2Type = FutureStorage<TOutcome2, FailureType>;
+        auto secondStorage = QSharedPointer<Storage2Type>::create();
+        auto secondContinuation =
+            Storage2Type::createContinuationThatStoresResultAt(secondStorage);
+
+        auto wrapper =
+            [f, secondContinuation](
+                QSharedPointer<Runner> actualRunner,
+                OutcomeType previousOutcome)
+        {
+            Q_UNUSED(actualRunner)
+
+            auto otherFuture = f(previousOutcome);
+
+            otherFuture._storage->addContinuation(secondContinuation);
+        };
+
+        auto continuation = ContinuationPtr::create(runner, wrapper);
+        _storage->addContinuation(continuation);
+
+        return SimpleFuture<TOutcome2>(secondStorage);
     }
 
     // =================================================================== //

@@ -24,7 +24,7 @@
 #include "common/resultmessageerrorcode.h"
 
 #include "client/labelidandname.h"
-#include "client/localhashid.h"
+#include "client/localtrackid.h"
 
 #include <QObject>
 #include <QString>
@@ -37,16 +37,16 @@ namespace PMP::Client
     public:
         virtual ~LabelsController() {}
 
-        virtual SimpleFuture<AnyResultMessageCode> applyLabelToTrack(LocalHashId hashId,
+        virtual SimpleFuture<AnyResultMessageCode> applyLabelToTrack(LocalTrackId trackId,
                                                                      QString label) = 0;
         virtual SimpleFuture<AnyResultMessageCode> removeLabelFromTrack(
-                                                                     LocalHashId hashId,
+                                                                     LocalTrackId trackId,
                                                                      QString label) = 0;
 
         virtual Future<QList<QString>, AnyResultMessageCode> getLabelNamesByTrack(
-                                                                LocalHashId hashId) = 0;
+                                                                LocalTrackId trackId) = 0;
         virtual Future<QList<LabelIdAndName>, AnyResultMessageCode> getLabelsByTrack(
-                                                                LocalHashId hashId) = 0;
+                                                                LocalTrackId trackId) = 0;
 
         virtual Future<QHash<quint32,QString>, AnyResultMessageCode> getLabelNamesByIds(
                                                             QList<quint32> labelIds) = 0;
@@ -55,7 +55,7 @@ namespace PMP::Client
         virtual Future<QList<LabelIdAndName>, AnyResultMessageCode> getActiveLabels() = 0;
 
     Q_SIGNALS:
-        void trackLabelsChanged(LocalHashId hashId);
+        void trackLabelsChanged(LocalTrackId trackId);
 
     protected:
         explicit LabelsController(QObject* parent) : QObject(parent) {}

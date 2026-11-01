@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2015-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -92,11 +92,6 @@ namespace PMP
 
             return TriBool(isFalse());
         }
-
-        friend constexpr TriBool operator == (TriBool a, TriBool b);
-        friend constexpr TriBool operator != (TriBool a, TriBool b);
-        friend constexpr TriBool operator & (TriBool a, TriBool b);
-        friend constexpr TriBool operator | (TriBool a, TriBool b);
 
     private:
         unsigned char _value; /* 0=unknown, 1=false, 2=true */

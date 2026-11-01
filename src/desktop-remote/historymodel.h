@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2024-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,7 +23,7 @@
 #include "common/playerhistorytrackinfo.h"
 
 #include "client/historyentry.h"
-#include "client/localhashid.h"
+#include "client/localtrackid.h"
 
 #include <QAbstractTableModel>
 #include <QVector>
@@ -42,14 +42,14 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        HistoryModel(QObject* parent, uint userId, Client::LocalHashId hashId,
+        HistoryModel(QObject* parent, uint userId, Client::LocalTrackId hashId,
                      Client::ServerInterface* serverInterface);
 
         uint userId() const;
         void setUserId(uint userId);
 
-        Client::LocalHashId track() const;
-        void setTrack(Client::LocalHashId hashId);
+        Client::LocalTrackId track() const;
+        void setTrack(Client::LocalTrackId hashId);
 
         int countTotal() const { return _countTotal; }
         int countForScore() const { return _countForScore; }
@@ -58,7 +58,8 @@ namespace PMP
         int columnCount(const QModelIndex& parent = QModelIndex()) const override;
         QVariant headerData(int section, Qt::Orientation orientation,
                             int role = Qt::DisplayRole) const override;
-        QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
+        QVariant data(const QModelIndex& index,
+                      int role = Qt::DisplayRole) const override;
         Qt::ItemFlags flags(const QModelIndex& index) const override;
 
     Q_SIGNALS:
@@ -79,7 +80,7 @@ namespace PMP
         Client::ServerInterface* _serverInterface;
         uint _stateAtLastRequest { 0 };
         uint _userId;
-        Client::LocalHashId _hashId;
+        Client::LocalTrackId _hashId;
         std::deque<Client::HistoryEntry> _entries;
         int _countTotal { 0 };
         int _countForScore { 0 };

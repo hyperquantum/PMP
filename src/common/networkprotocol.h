@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2015-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -64,8 +64,9 @@ Changes for each version:
   25: client msg 27, server msg 36, error codes 26 & 120 & 121: fetch personal track history
   26: parameterless actions 60 & 61, server msg 37: full indexation and quick scan for new files
   27: client msg 28, server msg 38: requesting individual track info
-  28: client msgs 15 & 16 & 19, server msgs 18 & 19 & 21 & 36 & 38, error code 27 : server track IDs
-  29: client msgs 29 & 30, server msgs 39 & 40 & 41, error codes 27 & 28 & 122 & 243 .... : labels
+  28: client msgs 15 & 16 & 19, server msgs 18 & 19 & 21 & 36 & 38, error code 27 : server-side track IDs
+  29: client msgs 18 & 27 & 29 & 30, server msgs 22 & 29 & 39 & 40 : full switch to server-side track IDs
+  30: client msgs 31-35, server msgs 41-44, error codes 27 & 28 & 122 & 243 .... : labels  TODO VERIFY
 */
 
 namespace PMP
@@ -79,8 +80,8 @@ namespace PMP
         None = 0,
         PlayerStateMessage = 1,
         VolumeChangedMessage = 2,
-        TrackInfoMessage = 3,
-        BulkTrackInfoMessage = 4,
+        QueueEntryInfoMessage = 3,
+        BulkQueueEntryInfoMessage = 4,
         QueueContentsMessage = 5,
         QueueEntryRemovedMessage = 6,
         QueueEntryAddedMessage = 7,
@@ -115,10 +116,12 @@ namespace PMP
         HistoryFragmentMessage = 36,
         IndexationStatusMessage = 37,
         HashInfoReply = 38,
-        TrackLabelsListReply = 39,
-        LabelNamesReply = 40,
-        TrackLabelsChangeMessage = 41,
-        ActiveLabelsReply = 42,
+        TrackServerIdMessage = 39,
+        TrackInfoReply = 40,
+        TrackLabelsListReply = 41,
+        LabelNamesReply = 42,
+        TrackLabelsChangeMessage = 43,
+        ActiveLabelsReply = 44,
     };
 
     enum class ScrobblingServerMessageType : quint8
@@ -132,8 +135,8 @@ namespace PMP
     {
         None = 0,
         SingleByteActionMessage = 1,
-        TrackInfoRequestMessage = 2,
-        BulkTrackInfoRequestMessage = 3,
+        QueueEntryInfoRequestMessage = 2,
+        BulkQueueEntryInfoRequestMessage = 3,
         QueueFetchRequestMessage = 4,
         QueueEntryRemovalRequestMessage = 5,
         GeneratorNonRepetitionChangeMessage = 6,
@@ -145,11 +148,11 @@ namespace PMP
         InitiateLoginMessage = 12,
         FinishLoginMessage = 13,
         CollectionFetchRequestMessage = 14,
-        AddHashToEndOfQueueRequestMessage = 15,
-        AddHashToFrontOfQueueRequestMessage = 16,
+        AddTrackToEndOfQueueRequestMessage = 15,
+        AddTrackToFrontOfQueueRequestMessage = 16,
         BulkQueueEntryHashRequestMessage = 17,
-        HashUserDataRequestMessage = 18,
-        InsertHashIntoQueueRequestMessage = 19,
+        TrackUserDataRequestMessage = 18,
+        InsertTrackIntoQueueRequestMessage = 19,
         PlayerHistoryRequestMessage = 20,
         QueueEntryDuplicationRequestMessage = 21,
         ClientExtensionsMessage = 22,
@@ -159,11 +162,13 @@ namespace PMP
         ActivateDelayedStartRequest = 26,
         PersonalHistoryRequest = 27,
         HashInfoRequest = 28,
-        ApplyLabelToTrackMessage = 29,
-        RemoveLabelFromTrackMessage = 30,
-        TrackLabelsListRequest = 31,
-        LabelNamesRequest = 32,
-        ActiveLabelsRequest = 33,
+        TrackServerIdRequest = 29,
+        TrackInfoRequest = 30,
+        ApplyLabelToTrackMessage = 31,
+        RemoveLabelFromTrackMessage = 32,
+        TrackLabelsListRequest = 33,
+        LabelNamesRequest = 34,
+        ActiveLabelsRequest = 35,
     };
 
     enum class ScrobblingClientMessageType : quint8

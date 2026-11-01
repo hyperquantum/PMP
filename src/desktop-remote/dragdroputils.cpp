@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2017-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -25,10 +25,11 @@
 
 namespace PMP::DragDropUtils
 {
-    QList<FileHash> getHashes(const QModelIndexList& indexes,
-                              std::function<FileHash (QModelIndex)> indexToHashConversion)
+    Nullable<QList<FileHash>> tryGetHashes(const QModelIndexList& indexes,
+                    std::function<Nullable<FileHash> (QModelIndex)> indexToHashConversion)
     {
         QList<FileHash> hashes;
+
         int previousRow = -1;
         for (auto& index : indexes)
         {
@@ -36,8 +37,11 @@ namespace PMP::DragDropUtils
             if (row == previousRow) continue;
             previousRow = row;
 
-            auto hash = indexToHashConversion(index);
-            hashes.append(hash);
+            auto hashOrNull = indexToHashConversion(index);
+            if (hashOrNull == null)
+                return null;
+
+            hashes.append(hashOrNull.value());
         }
 
         return hashes;

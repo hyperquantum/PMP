@@ -56,7 +56,7 @@ set(PMP_CLIENT_SOURCES
     client/historycontrollerimpl.cpp
     client/inactivitytimer.cpp
     client/labelscontrollerimpl.cpp
-    client/localhashidrepository.cpp
+    client/localtrackidrepository.cpp
     client/playercontrollerimpl.cpp
     client/queuecontrollerimpl.cpp
     client/queueentryinfofetcher.cpp

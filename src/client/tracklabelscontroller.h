@@ -25,7 +25,7 @@
 
 #include "client/labelidandname.h"
 
-#include "localhashid.h"
+#include "localtrackid.h"
 
 #include <QHash>
 #include <QList>
@@ -40,7 +40,7 @@ namespace PMP::Client
     {
         Q_OBJECT
     public:
-        TrackLabelsController(QObject* parent, LocalHashId hashId,
+        TrackLabelsController(QObject* parent, LocalTrackId trackId,
                               LabelsController* labelsController);
 
         QList<QString> getLabelNames();
@@ -53,12 +53,12 @@ namespace PMP::Client
         void labelsRemoved(QList<QString> labelNames);
 
     private Q_SLOTS:
-        void onTrackLabelsChanged(LocalHashId hashId);
+        void onTrackLabelsChanged(LocalTrackId trackId);
 
     private:
         void receivedCompleteList(QList<LabelIdAndName> labels);
 
-        LocalHashId _hashId;
+        LocalTrackId _trackId;
         LabelsController* _labelsController;
         QHash<quint32, LabelIdAndName> _labels;
     };

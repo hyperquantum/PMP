@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2014-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -197,7 +197,9 @@ namespace PMP::Server
         void sendQueueHistoryMessage(int limit);
         void sendHistoryFragmentMessage(uint clientReference, HistoryFragment fragment);
         void sendHashUserDataMessage(quint32 userId, QVector<HashStats> stats);
+        void sendTrackServerIdMessage(uint clientReference, uint trackId);
         void sendHashInfoReply(uint clientReference, CollectionTrackInfo info);
+        void sendTrackInfoReply(uint clientReference, CollectionTrackInfo info);
         void sendServerNameMessage();
         void sendServerHealthMessageIfNotEverythingOkay();
         void sendServerHealthMessage();
@@ -218,7 +220,7 @@ namespace PMP::Server
                                          StartStopEventStatus quickScanForNewFilesStatus);
 
         void sendTrackLabelsListReply(uint clientReference, QList<quint32> labelIds);
-        void sendTrackLabelsChangeMessage(FileHash track, QList<quint32> labelsAddedIds,
+        void sendTrackLabelsChangeMessage(uint trackId, QList<quint32> labelsAddedIds,
                                           QList<quint32> labelsRemovedIds);
         void sendLabelNamesReply(uint clientReference, QHash<quint32, QString> idToNames);
         void sendActiveLabelsReply(quint32 clientReference, QList<quint32> labelIds);
@@ -243,8 +245,8 @@ namespace PMP::Server
         void parseFinishLoginMessage(QByteArray const& message);
         void parseActivateDelayedStartRequest(QByteArray const& message);
         void parsePlayerSeekRequestMessage(QByteArray const& message);
-        void parseTrackInfoRequestMessage(QByteArray const& message);
-        void parseBulkTrackInfoRequestMessage(QByteArray const& message);
+        void parseQueueEntryInfoRequestMessage(QByteArray const& message);
+        void parseBulkQueueEntryInfoRequestMessage(QByteArray const& message);
         void parseBulkQueueEntryHashRequestMessage(QByteArray const& message);
         void parsePossibleFilenamesForQueueEntryRequestMessage(QByteArray const& message);
         void parseQueueFetchRequestMessage(QByteArray const& message);
@@ -256,7 +258,9 @@ namespace PMP::Server
         void parseQueueEntryDuplicationRequest(QByteArray const& message);
         void parseQueueEntryMoveRequestMessage(QByteArray const& message);
         void parseHashUserDataRequest(QByteArray const& message);
+        void parseTrackServerIdRequest(QByteArray const& message);
         void parseHashInfoRequest(QByteArray const& message);
+        void parseTrackInfoRequest(QByteArray const& message);
         void parsePersonalHistoryRequest(QByteArray const& message);
         void parsePlayerHistoryRequest(QByteArray const& message);
         void parseCurrentUserScrobblingProviderInfoRequestMessage(

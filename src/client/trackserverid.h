@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2025-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -27,6 +27,7 @@
 
 namespace PMP::Client
 {
+    /*! Contains a server-side track ID, or nothing (zero). */
     class TrackServerId
     {
     public:
@@ -59,9 +60,9 @@ namespace PMP::Client
         return debug;
     }
 
-    constexpr inline size_t qHash(const TrackServerId& id)
+    constexpr inline size_t qHash(const TrackServerId& id, size_t seed)
     {
-        return id.value();
+        return qHashMulti(seed, id.value());
     }
 }
 

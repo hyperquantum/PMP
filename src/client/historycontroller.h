@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -40,7 +40,7 @@ namespace PMP::Client
         virtual void sendPlayerHistoryRequest(int limit) = 0;
 
         virtual Future<HistoryFragment, AnyResultMessageCode> getPersonalTrackHistory(
-            LocalHashId hashId, uint userId,
+            LocalTrackId hashId, uint userId,
             int limit, uint startId = 0) = 0;
 
     Q_SIGNALS:
