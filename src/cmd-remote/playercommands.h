@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,6 +20,8 @@
 #ifndef PMP_PLAYERCOMMANDS_H
 #define PMP_PLAYERCOMMANDS_H
 
+#include "common/filehash.h"
+#include "common/nullable.h"
 #include "common/requestid.h"
 
 #include "commandbase.h"
@@ -98,6 +100,20 @@ namespace PMP
 
     protected:
         void run(Client::ServerInterface* serverInterface) override;
+
+    private:
+        struct CurrentTrackData
+        {
+            QString title;
+            QString artist;
+            QString possibleFilename;
+            quint32 queueId;
+            qint64 lengthMilliseconds;
+        };
+
+        QString generateOutput(CurrentTrackData data, FileHash hash);
+
+        Nullable<FileHash> _hash;
     };
 }
 #endif

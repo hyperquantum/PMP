@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -31,16 +31,20 @@ namespace PMP::Server
     public:
         HashStats() {}
 
-        HashStats(FileHash const& hash, TrackStats const& stats)
-         : _hash(hash), _stats(stats)
+        HashStats(uint trackId, FileHash const& hash, TrackStats const& stats)
+          : _trackId(trackId),
+            _hash(hash),
+            _stats(stats)
         {
             //
         }
 
+        uint trackId() const { return _trackId; }
         FileHash const& hash() const { return _hash; }
         TrackStats const& stats() const { return _stats; }
 
     private:
+        uint _trackId;
         FileHash _hash;
         TrackStats _stats;
     };

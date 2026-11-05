@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2023-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -55,7 +55,7 @@ namespace PMP::Client
         onEntriesReceived(-1 /* index not used */, queueMonitor->knownQueuePart());
     }
 
-    bool QueueHashesMonitorImpl::isPresentInQueue(LocalHashId hashId) const
+    bool QueueHashesMonitorImpl::isPresentInQueue(LocalTrackId hashId) const
     {
         auto it = _hashToQueueIds.constFind(hashId);
         if (it == _hashToQueueIds.constEnd())
@@ -98,7 +98,7 @@ namespace PMP::Client
         qDebug() << "QueueHashesMonitor::onTrackAdded; index:" << index
                  << " QID:" << queueId;
 
-        LocalHashId hashId;
+        LocalTrackId hashId;
 
         auto entryInfo = _queueEntryInfoStorage->entryInfoByQueueId(queueId);
         if (entryInfo != nullptr)
@@ -131,10 +131,10 @@ namespace PMP::Client
         }
     }
 
-    void QueueHashesMonitorImpl::associateHashWithQueueId(LocalHashId hashId,
+    void QueueHashesMonitorImpl::associateHashWithQueueId(LocalTrackId hashId,
                                                           quint32 queueId, bool canAdd)
     {
-        LocalHashId previousHash;
+        LocalTrackId previousHash;
         bool previousHashPresenceChanged = false;
         bool hashPresenceChanged = false;
 
@@ -185,7 +185,7 @@ namespace PMP::Client
         if (canRemove)
             _queueIdToHash.erase(it);
         else
-            _queueIdToHash[queueId] = LocalHashId();
+            _queueIdToHash[queueId] = LocalTrackId();
 
         if (!previousHash.isZero())
         {

@@ -39,7 +39,7 @@
 
 namespace PMP::Client
 {
-    class LocalHashIdRepository;
+    class CollectionWatcher;
     class QueueHashesMonitor;
     class ServerInterface;
     class UserDataFetcher;
@@ -70,7 +70,7 @@ namespace PMP
 
         Client::CollectionTrackInfo const* trackAt(const QModelIndex& index) const;
         Client::CollectionTrackInfo const* trackAt(int rowIndex) const;
-        int trackIndex(Client::LocalHashId hashId) const;
+        int trackIndex(Client::LocalTrackId hashId) const;
 
         int rowCount(const QModelIndex& parent = QModelIndex()) const;
         int columnCount(const QModelIndex& parent = QModelIndex()) const;
@@ -87,14 +87,14 @@ namespace PMP
 
     private Q_SLOTS:
         void onNewTrackReceived(Client::CollectionTrackInfo track);
-        void onTrackAvailabilityChanged(Client::LocalHashId hashId, bool isAvailable);
+        void onTrackAvailabilityChanged(Client::LocalTrackId hashId, bool isAvailable);
         void onTrackDataChanged(Client::CollectionTrackInfo track);
-        void onUserTrackDataChanged(quint32 userId, Client::LocalHashId hashId);
-        void currentTrackInfoChanged(Client::LocalHashId hashId);
-        void onHashInQueuePresenceChanged(Client::LocalHashId hashId);
+        void onUserTrackDataChanged(quint32 userId, Client::LocalTrackId hashId);
+        void currentTrackInfoChanged(Client::LocalTrackId hashId);
+        void onHashInQueuePresenceChanged(Client::LocalTrackId hashId);
 
     private:
-        void updateTrackAvailability(Client::LocalHashId hashId, bool isAvailable);
+        void updateTrackAvailability(Client::LocalTrackId hashId, bool isAvailable);
         template<class T> void addWhenModelEmpty(T trackCollection);
         void addOrUpdateTrack(Client::CollectionTrackInfo const& track);
         void addTrack(Client::CollectionTrackInfo const& track);
@@ -105,7 +105,7 @@ namespace PMP
         int findOuterIndexMapIndexForInsert(Client::CollectionTrackInfo const& track);
         int findOuterIndexMapIndexForInsert(Client::CollectionTrackInfo const& track,
                                             int searchRangeBegin, int searchRangeEnd);
-        int findOuterIndexForHash(Client::LocalHashId hashId);
+        int findOuterIndexForHash(Client::LocalTrackId hashId);
         void markRowAsChanged(int index);
         void markLeftColumnAsChanged();
         void markEverythingAsChanged();
@@ -136,9 +136,9 @@ namespace PMP
                           const Client::CollectionTrackInfo& track2,
                           Qt::SortOrder sortOrder) const;
 
-        Client::LocalHashIdRepository* _hashIdRepository;
+        Client::CollectionWatcher* _collectionWatcher;
         QVector<Client::CollectionTrackInfo*> _tracks;
-        QHash<Client::LocalHashId, int> _hashesToInnerIndexes;
+        QHash<Client::LocalTrackId, int> _hashesToInnerIndexes;
         QVector<int> _innerToOuterIndexMap;
         QVector<int> _outerToInnerIndexMap;
         QCollator _collator;
@@ -146,7 +146,7 @@ namespace PMP
         int _sortBy;
         Qt::SortOrder _sortOrder;
         TrackJudge _highlightingTrackJudge;
-        Client::LocalHashId _currentTrackHash;
+        Client::LocalTrackId _currentTrackHash;
         PlayerState _playerState;
         Client::QueueHashesMonitor* _queueHashesMonitor;
     };
@@ -178,13 +178,17 @@ namespace PMP
         void onNewTrackReceived(Client::CollectionTrackInfo track);
 
     private:
+        enum class TextFilterMode { Strings, Hash };
+
         Client::ServerInterface* _serverInterface;
+        Client::CollectionWatcher* _collectionWatcher;
         SortedCollectionTableModel* _source;
         SearchData* _searchData;
         Client::SearchQuery _searchQuery;
-        FileHash _searchFileHash;
-        Nullable<Client::LocalHashId> _searchHashId;
+        Nullable<FileHash> _searchFileHash;
+        Nullable<Client::LocalTrackId> _searchHashId;
         TrackJudge _filteringTrackJudge;
+        TextFilterMode _textFilterMode { TextFilterMode::Strings };
     };
 }
 #endif

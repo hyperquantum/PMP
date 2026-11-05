@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2023-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,8 +19,6 @@
 
 #include "test_sortedcollectiontablemodel.h"
 
-#include "client/localhashidrepository.h"
-
 #include "desktop-remote/collectiontablemodel.h"
 
 #include <QtTest/QTest>
@@ -32,7 +30,7 @@ namespace
 {
     CollectionTrackInfo createTrack(int hashId, QString title, QString artist)
     {
-        return CollectionTrackInfo(LocalHashId(hashId), true, title, artist, "", "",
+        return CollectionTrackInfo(LocalTrackId(hashId), true, title, artist, "", "",
                                    3 * 60 * 1000);
     }
 
@@ -105,7 +103,7 @@ void TestSortedCollectionTableModel::trackTitleUpdateCausesMoveUpward()
     QCOMPARE(model.trackAt(3)->title(), "H");
     verifyInnerToOuterMapping(model);
 
-    collectionWatcher.modifyTrackTitle(LocalHashId(2), "A");
+    collectionWatcher.modifyTrackTitle(LocalTrackId(2), "A");
 
     QCOMPARE(movements, "M1-1>0;");
 
@@ -149,7 +147,7 @@ void TestSortedCollectionTableModel::trackTitleUpdateCausesNoMove_v1()
     QCOMPARE(model.trackAt(3)->title(), "H");
     verifyInnerToOuterMapping(model);
 
-    collectionWatcher.modifyTrackTitle(LocalHashId(2), "C");
+    collectionWatcher.modifyTrackTitle(LocalTrackId(2), "C");
 
     QCOMPARE(movements, "");
 
@@ -193,7 +191,7 @@ void TestSortedCollectionTableModel::trackTitleUpdateCausesNoMove_v2()
     QCOMPARE(model.trackAt(3)->title(), "H");
     verifyInnerToOuterMapping(model);
 
-    collectionWatcher.modifyTrackTitle(LocalHashId(2), "E");
+    collectionWatcher.modifyTrackTitle(LocalTrackId(2), "E");
 
     QCOMPARE(movements, "");
 
@@ -237,7 +235,7 @@ void TestSortedCollectionTableModel::trackTitleUpdateCausesMoveDownward()
     QCOMPARE(model.trackAt(3)->title(), "H");
     verifyInnerToOuterMapping(model);
 
-    collectionWatcher.modifyTrackTitle(LocalHashId(2), "G");
+    collectionWatcher.modifyTrackTitle(LocalTrackId(2), "G");
 
     QCOMPARE(movements, "M1-1>3;");
 
@@ -282,7 +280,7 @@ void TestSortedCollectionTableModel::trackTitleUpdateCausesMoveToLastPosition()
     QCOMPARE(model.trackAt(4)->title(), "K");
     verifyInnerToOuterMapping(model);
 
-    collectionWatcher.modifyTrackTitle(LocalHashId(2), "L");
+    collectionWatcher.modifyTrackTitle(LocalTrackId(2), "L");
 
     QCOMPARE(movements, "M1-1>5;");
 
@@ -437,7 +435,7 @@ qint64 CurrentTrackMonitorMock::currentTrackProgressMilliseconds() const
     NOT_IMPLEMENTED
 }
 
-LocalHashId CurrentTrackMonitorMock::currentTrackHash() const
+LocalTrackId CurrentTrackMonitorMock::currentTrackHash() const
 {
     return {};
 }
@@ -470,7 +468,7 @@ void CurrentTrackMonitorMock::seekTo(qint64 positionInMilliseconds)
 
 /* =========== */
 
-bool QueueHashesMonitorMock::isPresentInQueue(PMP::Client::LocalHashId hashId) const
+bool QueueHashesMonitorMock::isPresentInQueue(PMP::Client::LocalTrackId hashId) const
 {
     Q_UNUSED(hashId)
     return false;
@@ -505,7 +503,7 @@ void UserDataFetcherMock::enableAutoFetchForUser(quint32 userId)
     Q_UNUSED(userId)
 }
 
-bool UserDataFetcherMock::checkHaveHashDataForUser(quint32 userId, LocalHashId hashId)
+bool UserDataFetcherMock::checkHaveHashDataForUser(quint32 userId, LocalTrackId hashId)
 {
     Q_UNUSED(userId)
     Q_UNUSED(hashId)
@@ -513,7 +511,7 @@ bool UserDataFetcherMock::checkHaveHashDataForUser(quint32 userId, LocalHashId h
 }
 
 const UserDataFetcher::HashData* UserDataFetcherMock::getHashDataForUser(quint32 userId,
-                                                                       LocalHashId hashId)
+                                                                       LocalTrackId hashId)
 {
     Q_UNUSED(userId)
     Q_UNUSED(hashId)
@@ -527,7 +525,7 @@ void CollectionWatcherMock::addTrack(CollectionTrackInfo track)
     _collection.insert(track.hashId(), track);
 }
 
-void CollectionWatcherMock::modifyTrackTitle(LocalHashId id, QString title)
+void CollectionWatcherMock::modifyTrackTitle(LocalTrackId id, QString title)
 {
     auto it = _collection.find(id);
     if (it == _collection.end())
@@ -552,19 +550,47 @@ bool CollectionWatcherMock::downloadingInProgress() const
     NOT_IMPLEMENTED
 }
 
-QHash<LocalHashId, CollectionTrackInfo> CollectionWatcherMock::getCollection()
+QHash<LocalTrackId, CollectionTrackInfo> CollectionWatcherMock::getCollection()
 {
     return _collection;
 }
 
-Nullable<CollectionTrackInfo> CollectionWatcherMock::getTrackFromCache(LocalHashId hashId)
+Future<LocalTrackId, AnyResultMessageCode>
+    CollectionWatcherMock::convertTrackHashToLocalId(const FileHash& hash)
+{
+    Q_UNUSED(hash)
+    NOT_IMPLEMENTED
+}
+
+Future<FileHash, AnyResultMessageCode> CollectionWatcherMock::convertLocalTrackIdToHash(
+    LocalTrackId localId)
+{
+    Q_UNUSED(localId)
+    NOT_IMPLEMENTED
+}
+
+Nullable<LocalTrackId> CollectionWatcherMock::tryConvertTrackHashToLocalId(
+    const FileHash& hash)
+{
+    Q_UNUSED(hash)
+    NOT_IMPLEMENTED
+}
+
+Nullable<FileHash> CollectionWatcherMock::tryConvertLocalTrackIdToHash(
+    LocalTrackId localId)
+{
+    Q_UNUSED(localId)
+    NOT_IMPLEMENTED
+}
+
+Nullable<CollectionTrackInfo> CollectionWatcherMock::getTrackFromCache(LocalTrackId hashId)
 {
     Q_UNUSED(hashId)
     NOT_IMPLEMENTED
 }
 
 Future<CollectionTrackInfo, AnyResultMessageCode> CollectionWatcherMock::getTrackInfo(
-                                                                       LocalHashId hashId)
+                                                                       LocalTrackId hashId)
 {
     Q_UNUSED(hashId)
     NOT_IMPLEMENTED
@@ -580,7 +606,6 @@ Future<CollectionTrackInfo, AnyResultMessageCode> CollectionWatcherMock::getTrac
 /* =========== */
 
 ServerInterfaceMock::ServerInterfaceMock()
-    : _localHashIdRepository(new LocalHashIdRepository())
 {
     //
 }
@@ -603,11 +628,6 @@ void ServerInterfaceMock::setCollectionWatcher(CollectionWatcher* collectionWatc
 void ServerInterfaceMock::setCurrentTrackMonitor(CurrentTrackMonitor* currentTrackMonitor)
 {
     _currentTrackMonitor = currentTrackMonitor;
-}
-
-PMP::Client::LocalHashIdRepository* ServerInterfaceMock::hashIdRepository() const
-{
-    return _localHashIdRepository;
 }
 
 AuthenticationController& ServerInterfaceMock::authenticationController()

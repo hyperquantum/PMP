@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2017-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,7 +22,7 @@
 
 #include "common/playerhistorytrackinfo.h"
 
-#include "client/localhashid.h"
+#include "client/localtrackid.h"
 
 #include <QAbstractTableModel>
 #include <QList>
@@ -31,7 +31,7 @@
 
 namespace PMP::Client
 {
-    class LocalHashIdRepository;
+    class CollectionWatcher;
     class QueueEntryInfoStorage;
     class ServerInterface;
 }
@@ -44,7 +44,7 @@ namespace PMP
     public:
         PlayerHistoryModel(QObject* parent, Client::ServerInterface* serverInterface);
 
-        Client::LocalHashId trackHashAt(int rowIndex) const;
+        Client::LocalTrackId trackHashAt(int rowIndex) const;
 
         int rowCount(const QModelIndex& parent = QModelIndex()) const override;
         int columnCount(const QModelIndex& parent = QModelIndex()) const override;
@@ -66,7 +66,7 @@ namespace PMP
 
     private:
         int _historySizeGoal;
-        Client::LocalHashIdRepository* _hashIdRepository;
+        Client::CollectionWatcher* _collectionWatcher;
         Client::QueueEntryInfoStorage* _infoStorage;
         qint64 _clientClockTimeOffsetMs;
         QList<QSharedPointer<PlayerHistoryTrackInfo>> _list;

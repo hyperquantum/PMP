@@ -40,7 +40,7 @@
 
 #include "collectiontrackinfo.h"
 #include "historyentry.h"
-#include "localhashid.h"
+#include "localtrackid.h"
 #include "trackhashorid.h"
 
 #include <QByteArray>
@@ -53,11 +53,13 @@
 #include <QUuid>
 #include <QVector>
 
+#include <memory>
+
 namespace PMP::Client
 {
     class CollectionFetcher;
     class InactivityTimer;
-    class LocalHashIdRepository;
+    class LocalTrackIdRepository;
     class ServerCapabilities;
     class ServerCapabilitiesImpl;
     class TrackServerIdRepository;
@@ -95,16 +97,14 @@ namespace PMP::Client
         class DuplicationResultHandler;
         class HistoryFragmentResultHandler;
         class HashInfoResultHandler;
+        class TrackInfoResultHandler;
+        class HashToServerIdResultHandler;
 
     public:
         explicit ServerConnection(QObject* parent,
-                                  LocalHashIdRepository* hashIdRepository,
-                                  TrackServerIdRepository* trackServerIdRepository,
                                   ServerEventSubscription eventSubscription =
                                                       ServerEventSubscription::AllEvents);
         ~ServerConnection();
-
-        LocalHashIdRepository* hashIdRepository() const { return _hashIdRepository; }
 
         void connectToHost(QString const& host, quint16 port);
         void disconnect();
@@ -129,17 +129,26 @@ namespace PMP::Client
         SimpleFuture<AnyResultMessageCode> activateDelayedStart(
                                                                 qint64 delayMilliseconds);
         SimpleFuture<AnyResultMessageCode> deactivateDelayedStart();
-        RequestID insertQueueEntryAtIndex(LocalHashId hashId, quint32 index);
+        RequestID insertQueueEntryAtIndex(LocalTrackId hashId, quint32 index);
         RequestID insertQueueEntryAtIndex(TrackHashOrId track, quint32 index);
         RequestID insertSpecialQueueItemAtIndex(SpecialQueueItemType itemType, int index,
                                        QueueIndexType indexType = QueueIndexType::Normal);
         RequestID duplicateQueueEntry(uint queueID);
-        Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
-                                                                    LocalHashId hashId);
-        Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
+
+        Future<LocalTrackId, AnyResultMessageCode> convertTrackHashToLocalId(
                                                                     FileHash const& hash);
+        Future<FileHash, AnyResultMessageCode> convertLocalTrackIdToHash(
+                                                                    LocalTrackId localId);
+        Nullable<LocalTrackId> tryConvertTrackHashToLocalId(FileHash const& hash);
+        Nullable<FileHash> tryConvertLocalTrackIdToHash(LocalTrackId localId);
+
+        Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
+                                                                    LocalTrackId hashId);
+        Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
+                                                                    TrackHashOrId track);
+
         Future<HistoryFragment, AnyResultMessageCode> getPersonalTrackHistory(
-                                                        LocalHashId hashId, uint userId,
+                                                        LocalTrackId hashId, uint userId,
                                                         int limit, uint startId = 0);
 
         SimpleFuture<AnyResultMessageCode> authenticateScrobbling(
@@ -180,9 +189,9 @@ namespace PMP::Client
         void deleteQueueEntry(uint queueID);
         void moveQueueEntry(uint queueID, qint16 offsetDiff);
 
-        void insertQueueEntryAtFront(LocalHashId hashId);
+        void insertQueueEntryAtFront(LocalTrackId hashId);
         void insertQueueEntryAtFront(TrackHashOrId track);
-        void insertQueueEntryAtEnd(LocalHashId hashId);
+        void insertQueueEntryAtEnd(LocalTrackId hashId);
         void insertQueueEntryAtEnd(TrackHashOrId track);
 
         void sendQueueEntryInfoRequest(uint queueID);
@@ -190,11 +199,15 @@ namespace PMP::Client
 
         void sendQueueEntryHashRequest(QList<uint> const& queueIDs);
 
-        void sendHashUserDataRequest(quint32 userId, QList<LocalHashId> const& hashes);
+        void sendHashUserDataRequest(quint32 userId, QList<LocalTrackId> const& tracks);
         Future<CollectionTrackInfo, AnyResultMessageCode> sendHashInfoRequest(
-                                                                    const FileHash& hash);
+                                                                    TrackHashOrId track);
+        Future<CollectionTrackInfo, AnyResultMessageCode> sendHashInfoRequest(
+                                                                    FileHash const& hash);
+        Future<CollectionTrackInfo, AnyResultMessageCode> sendTrackInfoRequest(
+                                                                    TrackServerId track);
         Future<HistoryFragment, AnyResultMessageCode> sendHashHistoryRequest(
-                                                        LocalHashId hashId, uint userId,
+                                                        LocalTrackId trackId, uint userId,
                                                         int limit, uint startId);
 
         void sendPossibleFilenamesRequest(uint queueID);
@@ -253,8 +266,8 @@ namespace PMP::Client
         void receivedTrackInfo(quint32 queueId, QueueEntryType type,
                                qint64 lengthMilliseconds, QString title, QString artist);
         void receivedQueueEntryHash(quint32 queueId, QueueEntryType type,
-                                    LocalHashId hashId);
-        void receivedHashUserData(LocalHashId hashId, quint32 userId,
+                                    LocalTrackId hashId);
+        void receivedHashUserData(LocalTrackId hashId, quint32 userId,
                                   QDateTime previouslyHeard, qint16 scorePermillage);
         void receivedPossibleFilenames(quint32 queueId, QList<QString> names);
 
@@ -271,8 +284,8 @@ namespace PMP::Client
         void quickScanForNewFilesStatusReceived(StartStopEventStatus status);
 
         void collectionTracksAvailabilityChanged(
-                                           QVector<PMP::Client::LocalHashId> available,
-                                           QVector<PMP::Client::LocalHashId> unavailable);
+                                           QVector<PMP::Client::LocalTrackId> available,
+                                           QVector<PMP::Client::LocalTrackId> unavailable);
         void collectionTracksChanged(QVector<PMP::Client::CollectionTrackInfo> changes);
 
         void scrobblingProviderInfoReceived(ScrobblingProvider provider,
@@ -354,6 +367,9 @@ namespace PMP::Client
                                                             QString username,
                                                             QString password);
 
+        Future<TrackServerId, AnyResultMessageCode> sendTrackServerIdRequest(
+                                                                    FileHash const& hash);
+
         void onFullIndexationRunningStatusReceived(bool running);
 
         void parseKeepAliveMessage(QByteArray const& message);
@@ -399,7 +415,9 @@ namespace PMP::Client
                                         ServerMessageType messageType);
 
         void parseHashUserDataMessage(QByteArray const& message);
+        void parseTrackServerIdMessage(QByteArray const& message);
         void parseHashInfoReply(QByteArray const& message);
+        void parseTrackInfoReply(QByteArray const& message);
         void parseHistoryFragmentMessage(QByteArray const& message);
         void parseNewHistoryEntryMessage(QByteArray const& message);
         void parsePlayerHistoryMessage(QByteArray const& message);
@@ -419,8 +437,8 @@ namespace PMP::Client
 
         static const quint16 ClientProtocolNo;
 
-        LocalHashIdRepository* _hashIdRepository;
-        TrackServerIdRepository* _trackServerIdRepository;
+        std::unique_ptr<LocalTrackIdRepository> _trackIdRepository;
+        std::unique_ptr<TrackServerIdRepository> _trackServerIdRepository;
         ServerCapabilitiesImpl* _serverCapabilities;
         DisconnectReason _disconnectReason;
         InactivityTimer* _inactivityTimer;

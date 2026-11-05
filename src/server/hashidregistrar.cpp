@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2022-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,6 +22,8 @@
 #include "common/concurrent.h"
 
 #include "database.h"
+
+#include <limits>
 
 namespace PMP::Server
 {
@@ -148,12 +150,12 @@ namespace PMP::Server
         return _ids.keys();
     }
 
-    QVector<QPair<uint, FileHash>> HashIdRegistrar::getExistingIdsOnly(
-                                                                 QVector<FileHash> hashes)
+    QList<QPair<uint, FileHash> > HashIdRegistrar::getExistingIdsOnly(
+        QList<FileHash> hashes)
     {
         QMutexLocker lock(&_mutex);
 
-        QVector<QPair<uint, FileHash>> result;
+        QList<QPair<uint, FileHash>> result;
         result.reserve(hashes.size());
 
         for (auto const& hash : hashes)
@@ -164,6 +166,27 @@ namespace PMP::Server
                 continue;
 
             QPair<uint, FileHash> pair(it.value(), hash);
+            result.append(pair);
+        }
+
+        return result;
+    }
+
+    QList<QPair<uint, FileHash> > HashIdRegistrar::getExistingIdsOnly(QList<quint64> ids)
+    {
+        QMutexLocker lock(&_mutex);
+
+        QList<QPair<uint, FileHash>> result;
+        result.reserve(ids.size());
+
+        for (auto trackId : ids)
+        {
+            auto it = _ids.constFind(trackId);
+
+            if (it == _ids.constEnd())
+                continue;
+
+            QPair<uint, FileHash> pair(trackId, it.value());
             result.append(pair);
         }
 
@@ -207,6 +230,14 @@ namespace PMP::Server
             return it.value();
 
         return null;
+    }
+
+    Nullable<FileHash> HashIdRegistrar::getHashForId(quint64 id)
+    {
+        if (id > std::numeric_limits<uint>::max())
+            return null;
+
+        return getHashForId(static_cast<uint>(id));
     }
 
     ResultOrError<uint, FailureType> HashIdRegistrar::registerHash(Database& db,

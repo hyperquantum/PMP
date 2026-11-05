@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,6 +20,7 @@
 #ifndef PMP_NULLABLE_H
 #define PMP_NULLABLE_H
 
+#include <QDebug>
 #include <QtGlobal>
 
 namespace PMP
@@ -188,5 +189,16 @@ namespace PMP
 
     template <class T>
     constexpr Nullable<T> nullOf() { return {}; }
+
+    template <class T>
+    QDebug operator<<(QDebug debug, Nullable<T> const& n)
+    {
+        if (n.isNull())
+            debug << "null";
+        else
+            debug << n.value();
+
+        return debug;
+    }
 }
 #endif

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2025, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -586,7 +586,8 @@ namespace PMP
             );
         }
 
-        QMenu* insertBeforeThisMenu = _queueContextMenu->addMenu(tr("Insert before this"));
+        QMenu* insertBeforeThisMenu =
+                _queueContextMenu->addMenu(tr("Insert before this"));
         auto* insertBreakBeforeThisAction = insertBeforeThisMenu->addAction(tr("Break"));
         connect(insertBreakBeforeThisAction, &QAction::triggered,
                 queueController,
@@ -958,7 +959,7 @@ namespace PMP
         _ui->positionValueLabel->setText(text);
     }
 
-    void MainWidget::showTrackInfoDialog(LocalHashId hashId, quint32 queueId)
+    void MainWidget::showTrackInfoDialog(LocalTrackId hashId, quint32 queueId)
     {
         auto dialog = new TrackInfoDialog(this, _serverInterface, _userStatisticsDisplay,
                                           hashId, queueId);

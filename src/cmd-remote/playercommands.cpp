@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,8 +21,8 @@
 
 #include "common/util.h"
 
+#include "client/collectionwatcher.h"
 #include "client/currenttrackmonitor.h"
-#include "client/localhashidrepository.h"
 #include "client/playercontroller.h"
 #include "client/serverinterface.h"
 
@@ -162,7 +162,7 @@ namespace PMP
     void NowPlayingCommand::run(ServerInterface* serverInterface)
     {
         auto* currentTrackMonitor = &serverInterface->currentTrackMonitor();
-        auto* hashIdRepository = serverInterface->hashIdRepository();
+        auto* collectionWatcher = &serverInterface->collectionWatcher();
 
         connect(currentTrackMonitor, &CurrentTrackMonitor::currentTrackChanged,
                 this, &NowPlayingCommand::listenerSlot);
@@ -170,15 +170,21 @@ namespace PMP
                 this, &NowPlayingCommand::listenerSlot);
 
         addStep(
-            [currentTrackMonitor, hashIdRepository]() -> StepResult
+            [this, currentTrackMonitor, collectionWatcher]()
+                -> StepResult
             {
                 auto isTrackPresent = currentTrackMonitor->isTrackPresent();
 
                 if (isTrackPresent.isFalse())
                     return StepResult::commandSuccessful("Now playing: nothing");
 
-                if (isTrackPresent.isUnknown()
-                        || currentTrackMonitor->currentTrackHash().isZero())
+                if (isTrackPresent.isUnknown())
+                {
+                    return StepResult::stepIncomplete();
+                }
+
+                auto localTrackId = currentTrackMonitor->currentTrackHash();
+                if (localTrackId.isZero())
                 {
                     return StepResult::stepIncomplete();
                 }
@@ -187,38 +193,71 @@ namespace PMP
                 auto artist = currentTrackMonitor->currentTrackArtist();
                 //auto album = currentTrackMonitor->currentTrackAlbum(); NOT AVAILABLE YET
                 auto possibleFileName =
-                        currentTrackMonitor->currentTrackPossibleFilename();
+                    currentTrackMonitor->currentTrackPossibleFilename();
 
                 if (title.isEmpty() && artist.isEmpty() && possibleFileName.isEmpty())
                     return StepResult::stepIncomplete();
 
                 auto queueId = currentTrackMonitor->currentQueueId();
                 auto lengthMilliseconds =
-                        currentTrackMonitor->currentTrackLengthMilliseconds();
-                auto lengthString =
-                        lengthMilliseconds < 0
-                            ? ""
-                            : Util::millisecondsToLongDisplayTimeText(lengthMilliseconds);
-                auto hash =
-                    hashIdRepository->getHash(currentTrackMonitor->currentTrackHash());
+                    currentTrackMonitor->currentTrackLengthMilliseconds();
 
-                QString output;
-                output.reserve(100);
-                output += "Now playing: track\n";
-                output += " QID: " + QString::number(queueId) + "\n";
-                output += " title: " + title + "\n";
-                output += " artist: " + artist + "\n";
-                //output += " album: " + album + "\n";
-                output += " length: " + lengthString + "\n";
+                CurrentTrackData data =
+                    {
+                        .title = title,
+                        .artist = artist,
+                        .possibleFilename = possibleFileName,
+                        .queueId = queueId,
+                        .lengthMilliseconds = lengthMilliseconds,
+                    };
 
-                if (title.isEmpty() && artist.isEmpty())
-                    output += " possible filename: " + possibleFileName + "\n";
+                auto hashFuture =
+                    collectionWatcher->convertLocalTrackIdToHash(localTrackId);
 
-                output += " hash: " + hash.toString(); // no newline at the end here
+                hashFuture.handleOnEventLoop(
+                    this,
+                    [this, data](ResultOrError<FileHash, AnyResultMessageCode> outcome)
+                    {
+                        if (outcome.failed())
+                        {
+                            setCommandExecutionResult(outcome.error());
+                            return;
+                        }
 
-                return StepResult::commandSuccessful(output);
+                        auto hash = outcome.result();
+
+                        auto output = generateOutput(data, hash);
+
+                        setCommandExecutionSuccessful(output);
+                    }
+                );
+
+                return StepResult::stepCompleted();
             }
         );
     }
 
+    QString NowPlayingCommand::generateOutput(CurrentTrackData data, FileHash hash)
+    {
+        auto lengthString =
+            data.lengthMilliseconds < 0
+                ? ""
+                : Util::millisecondsToLongDisplayTimeText(data.lengthMilliseconds);
+
+        QString output;
+        output.reserve(100);
+        output += "Now playing: track\n";
+        output += " QID: " + QString::number(data.queueId) + "\n";
+        output += " title: " + data.title + "\n";
+        output += " artist: " + data.artist + "\n";
+        //output += " album: " + album + "\n";
+        output += " length: " + lengthString + "\n";
+
+        if (data.title.isEmpty() && data.artist.isEmpty())
+            output += " possible filename: " + data.possibleFilename + "\n";
+
+        output += " hash: " + hash.toString(); // no newline at the end here
+
+        return output;
+    }
 }
