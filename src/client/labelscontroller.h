@@ -21,7 +21,9 @@
 #define PMP_LABELSCONTROLLER_H
 
 #include "common/future.h"
+#include "common/nullable.h"
 #include "common/resultmessageerrorcode.h"
+#include "common/tribool.h"
 
 #include "client/labelidandname.h"
 #include "client/localtrackid.h"
@@ -43,11 +45,16 @@ namespace PMP::Client
                                                                      LocalTrackId trackId,
                                                                      QString label) = 0;
 
+        virtual TriBool tryCheckIfTrackHasLabel(LocalTrackId trackId,
+                                                quint32 labelId) = 0;
         virtual Future<QList<QString>, AnyResultMessageCode> getLabelNamesByTrack(
                                                                 LocalTrackId trackId) = 0;
         virtual Future<QList<LabelIdAndName>, AnyResultMessageCode> getLabelsByTrack(
                                                                 LocalTrackId trackId) = 0;
 
+        virtual void ensureFetchingOfTracksForLabel(quint32 labelId) = 0;
+
+        virtual Nullable<QString> tryGetLabelNameById(quint32 labelId) = 0;
         virtual Future<QHash<quint32,QString>, AnyResultMessageCode> getLabelNamesByIds(
                                                             QList<quint32> labelIds) = 0;
 
@@ -56,6 +63,7 @@ namespace PMP::Client
 
     Q_SIGNALS:
         void trackLabelsChanged(LocalTrackId trackId);
+        void labelTracksChanged(quint32 labelId);
 
     protected:
         explicit LabelsController(QObject* parent) : QObject(parent) {}

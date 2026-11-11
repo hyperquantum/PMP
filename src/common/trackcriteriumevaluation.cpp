@@ -208,6 +208,13 @@ namespace PMP
         Q_UNREACHABLE();
     }
 
+    void TrackCriteriumEvaluator::visit(const TrackLabelPresenceCriterium& criterium)
+    {
+        auto hasThatLabel = _context.hasLabel(criterium.labelId());
+
+        _result = criterium.presence() ? hasThatLabel : !hasThatLabel;
+    }
+
     void TrackCriteriumEvaluator::visit(const CompositeTrackCriterium& criterium)
     {
         auto const& memberCriteria = criterium.criteria();

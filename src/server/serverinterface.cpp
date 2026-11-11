@@ -857,6 +857,18 @@ namespace PMP::Server
         return _labels->getLabelsInActiveUse();
     }
 
+    ResultOrError<QSet<uint>, Error> ServerInterface::getTracksWithLabel(quint32 labelId)
+    {
+        /* require authentication for now, maybe we'll change this in the future */
+        if (!isLoggedIn())
+            return Error::notLoggedIn();
+
+        if (!_labels->checkLabelExists(labelId))
+            return Error::labelIdNotFound(labelId);
+
+        return _labels->getTracksWithLabel(labelId);
+    }
+
     void ServerInterface::shutDownServer()
     {
         if (!isLoggedIn()) return;

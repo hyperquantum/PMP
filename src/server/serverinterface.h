@@ -173,6 +173,7 @@ namespace PMP::Server
         ResultOrError<QHash<quint32, QString>, Error> getLabelNames(
                                                                 QList<quint32> labelIds);
         ResultOrError<QList<quint32>, Error> getActiveLabels();
+        ResultOrError<QSet<uint>, Error> getTracksWithLabel(quint32 labelId);
 
         void shutDownServer();
         void shutDownServer(QString serverPassword);

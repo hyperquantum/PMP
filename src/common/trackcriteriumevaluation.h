@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2025-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -47,6 +47,8 @@ namespace PMP
 
         virtual bool isAvailable() const = 0;
         virtual bool isPresentInQueue() const = 0;
+
+        virtual TriBool hasLabel(quint32 labelId) const = 0;
     };
 
     class TrackCriteriumEvaluator final : public TrackCriteriumVisitor
@@ -65,6 +67,7 @@ namespace PMP
         void visit(const TrackQueuePresenceCriterium&) override;
         void visit(const TrackAvailabilityCriterium&) override;
         void visit(const TrackMetaDataPresenceCriterium&) override;
+        void visit(const TrackLabelPresenceCriterium&) override;
         void visit(const CompositeTrackCriterium&) override;
 
     private:

@@ -19,8 +19,6 @@
 
 #include "trackcriteria.h"
 
-#include <algorithm>
-
 namespace PMP
 {
     TrackLengthComparisonCriterium::TrackLengthComparisonCriterium()
@@ -77,17 +75,5 @@ namespace PMP
     CompositeTrackCriterium::CompositeTrackCriterium()
     {
         //
-    }
-
-    bool CompositeTrackCriterium::usesUserData() const
-    {
-        if (_criteria.empty())
-            return false;
-
-        return
-            std::any_of(
-                _criteria.begin(), _criteria.end(),
-                [](auto const& c) { return c->usesUserData(); }
-            );
     }
 }

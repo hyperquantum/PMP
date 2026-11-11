@@ -66,7 +66,7 @@ Changes for each version:
   27: client msg 28, server msg 38: requesting individual track info
   28: client msgs 15 & 16 & 19, server msgs 18 & 19 & 21 & 36 & 38, error code 27 : server-side track IDs
   29: client msgs 18 & 27 & 29 & 30, server msgs 22 & 29 & 39 & 40 : full switch to server-side track IDs
-  30: client msgs 31-35, server msgs 41-44, error codes 27 & 28 & 122 & 243 .... : labels  TODO VERIFY
+  30: client msgs 31-36, server msgs 41-45, error codes 27 & 28 & 122 & 243 : labels
 */
 
 namespace PMP
@@ -122,6 +122,7 @@ namespace PMP
         LabelNamesReply = 42,
         TrackLabelsChangeMessage = 43,
         ActiveLabelsReply = 44,
+        LabelTracksResponseMessage = 45,
     };
 
     enum class ScrobblingServerMessageType : quint8
@@ -169,6 +170,7 @@ namespace PMP
         TrackLabelsListRequest = 33,
         LabelNamesRequest = 34,
         ActiveLabelsRequest = 35,
+        LabelTracksFetchRequest = 36,
     };
 
     enum class ScrobblingClientMessageType : quint8

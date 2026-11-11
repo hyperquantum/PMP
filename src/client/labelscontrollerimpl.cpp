@@ -19,9 +19,8 @@
 
 #include "labelscontrollerimpl.h"
 
-#include "common/containerutil.h"
-
 #include "serverconnection.h"
+#include "trackidslistfetcher.h"
 
 //#include <QtAssert> -- requires Qt 6.5
 #include <QtGlobal> // instead of <QtAssert>
@@ -46,6 +45,36 @@ namespace PMP::Client
         LocalTrackId trackId, QString label)
     {
         return _connection->removeLabelFromTrack(trackId, label);
+    }
+
+    TriBool LabelsControllerImpl::tryCheckIfTrackHasLabel(LocalTrackId trackId,
+                                                          quint32 labelId)
+    {
+        auto trackIt = _trackData.constFind(trackId);
+        if (trackIt != _trackData.constEnd())
+        {
+            auto& trackData = trackIt.value();
+
+            if (trackData.fetched)
+                return trackData.labelIds.contains(labelId);
+
+            if (trackData.labelIds.contains(labelId))
+                return true;
+
+            if (trackData.labelsRemovedIds.contains(labelId))
+                return false;
+        }
+
+        auto labelIt = _labelData.constFind(labelId);
+        if (labelIt != _labelData.constEnd())
+        {
+            auto& labelData = labelIt.value();
+
+            if (labelData.tracksFetched)
+                return labelData.tracks.contains(trackId);
+        }
+
+        return TriBool::unknown;
     }
 
     Future<QList<QString>, AnyResultMessageCode>
@@ -92,6 +121,20 @@ namespace PMP::Client
                 );
 
         return idAndNamesFuture;
+    }
+
+    void LabelsControllerImpl::ensureFetchingOfTracksForLabel(quint32 labelId)
+    {
+        ensureFetchingOfTracksForLabelInternal(labelId);
+    }
+
+    Nullable<QString> LabelsControllerImpl::tryGetLabelNameById(quint32 labelId)
+    {
+        auto it = _labelData.constFind(labelId);
+        if (it == _labelData.constEnd())
+            return null;
+
+        return it.value().name;
     }
 
     Future<QHash<quint32, QString>, AnyResultMessageCode>
@@ -150,59 +193,127 @@ namespace PMP::Client
                                                     QList<quint32> labelsAddedIds,
                                                     QList<quint32> labelsRemovedIds)
     {
-        auto& currentLabelIds = _trackData[trackId].labelIds;
+        auto& trackData = _trackData[trackId];
+        auto& currentLabelIds = trackData.labelIds;
 
-        auto labelsReallyAdded =
-            ContainerUtil::elementsOfListNotInSet(labelsAddedIds, currentLabelIds);
+        bool haveRealChanges = false;
 
-        if (labelsAddedIds.size() != labelsReallyAdded.size())
+        for (auto labelId : labelsAddedIds)
         {
-            qDebug() << "LabelsControllerImpl: difference between added and really added;"
-                        " added:" << labelsAddedIds
-                     << "; really added:" << labelsReallyAdded;
+            haveRealChanges |= trackData.labelsRemovedIds.remove(labelId);
+
+            auto oldSize = currentLabelIds.size();
+            currentLabelIds.insert(labelId);
+            haveRealChanges |= currentLabelIds.size() > oldSize;
+
+            _labelData[labelId].tracks.insert(trackId);
         }
 
-        auto labelsReallyRemoved =
-            ContainerUtil::elementsOfListAlsoInSet(labelsRemovedIds, currentLabelIds);
-
-        if (labelsRemovedIds.size() != labelsReallyRemoved.size())
+        for (auto labelId : labelsRemovedIds)
         {
-            qDebug() << "LabelsControllerImpl: difference between removed and really"
-                        " removed; removed:" << labelsRemovedIds
-                     << "; really removed:" << labelsReallyRemoved;
-        }
+            trackData.labelsRemovedIds.insert(labelId); // really necessary ???
 
-        if (labelsReallyAdded.isEmpty() && labelsReallyRemoved.isEmpty())
-            return;
+            haveRealChanges |= currentLabelIds.remove(labelId);
 
-        ContainerUtil::removeFromSet(labelsReallyRemoved, currentLabelIds);
-        ContainerUtil::addToSet(labelsReallyAdded, currentLabelIds);
-
-        for (auto labelId : labelsReallyAdded)
-        {
-            _labelData[labelId].tracks << trackId;
-        }
-
-        for (auto labelId : labelsReallyRemoved)
-        {
             _labelData[labelId].tracks.remove(trackId);
         }
 
-        Q_EMIT trackLabelsChanged(trackId);
+        if (haveRealChanges)
+            Q_EMIT trackLabelsChanged(trackId);
+    }
+
+    void LabelsControllerImpl::ensureFetchingOfTracksForLabelInternal(quint32 labelId)
+    {
+        auto& labelData = _labelData[labelId];
+        if (labelData.tracksFetched || labelData.fetchRequestSent)
+            return;
+
+        auto* fetcher = new TrackIdsListFetcher();
+
+        connect(
+            fetcher, &TrackIdsListFetcher::receivedIds,
+            this,
+            [this, labelId](QList<LocalTrackId> trackIds)
+            {
+                receivedTracksForLabelChunk(labelId, trackIds);
+            }
+        );
+
+        connect(
+            fetcher, &TrackIdsListFetcher::completed,
+            this,
+            [this, labelId]()
+            {
+                qDebug() << "LabelsControllerImpl: received tracks list for label"
+                         << labelId;
+
+                auto& labelData = _labelData[labelId];
+                bool incompleteFetch = labelData.fetchResultWillBeIncomplete;
+                labelData.tracksFetched = !incompleteFetch;
+                labelData.fetchRequestSent = false;
+
+                if (incompleteFetch)
+                {
+                    /* try fetching again if the result was incomplete */
+                    ensureFetchingOfTracksForLabelInternal(labelId);
+                }
+                else
+                {
+                    Q_EMIT labelTracksChanged(labelId);
+                }
+            }
+        );
+
+        connect(
+            fetcher, &TrackIdsListFetcher::errorOccurred,
+            this,
+            [this, labelId]()
+            {
+                qWarning() << "LabelsControllerImpl: failed to fetch tracks for label"
+                           << labelId;
+
+                auto& labelData = _labelData[labelId];
+                labelData.tracksFetched = false;
+                labelData.fetchRequestSent = false;
+                labelData.fetchResultWillBeIncomplete = false;
+            }
+        );
+
+        _connection->fetchTracksHavingLabel(labelId, fetcher);
+        labelData.fetchRequestSent = true;
+        labelData.fetchResultWillBeIncomplete = false;
+    }
+
+    void LabelsControllerImpl::receivedTracksForLabelChunk(quint32 labelId,
+                                                           QList<LocalTrackId> tracks)
+    {
+        auto& labelData = _labelData[labelId];
+
+        for (auto& trackId : tracks)
+        {
+            auto& trackData = _trackData[trackId];
+
+            if (trackData.labelIds.contains(labelId)
+                || trackData.labelsRemovedIds.contains(labelId))
+            {
+                continue;
+            }
+
+            trackData.labelIds.insert(labelId);
+            labelData.tracks.insert(trackId);
+        }
     }
 
     Future<QSet<quint32>, AnyResultMessageCode>
         LabelsControllerImpl::getLabelsByTrackInternal(LocalTrackId trackId)
     {
-        auto& hashData = _trackData[trackId];
+        auto& trackData = _trackData[trackId];
 
-        if (hashData.fetched)
-        {
-            return FutureResult(hashData.labelIds);
-        }
+        if (trackData.fetched)
+            return FutureResult(trackData.labelIds);
 
-        if (hashData.futureForFetching.hasValue())
-            return hashData.futureForFetching.value();
+        if (trackData.futureForFetching.hasValue())
+            return trackData.futureForFetching.value();
 
         auto future =
             _connection->getLabelsOfTrack(trackId)
@@ -215,25 +326,35 @@ namespace PMP::Client
                         if (outcome.failed())
                             return outcome.error();
 
-                        auto labelIdsAsSet = ContainerUtil::toSet(outcome.result());
+                        auto& trackData = _trackData[trackId];
+                        auto oldSize = trackData.labelIds.size();
 
-                        auto& hashData = _trackData[trackId];
-                        hashData.labelIds = labelIdsAsSet;
-                        hashData.futureForFetching = null;
-                        hashData.fetched = true;
-
-                        for (auto labelId : hashData.labelIds)
+                        for (auto labelId : outcome.result())
                         {
-                            _labelData[labelId].tracks << trackId;
+                            if (trackData.labelIds.contains(labelId)
+                                || trackData.labelsRemovedIds.contains(labelId))
+                            {
+                                continue;
+                            }
+
+                            trackData.labelIds.insert(labelId);
+                            _labelData[labelId].tracks.insert(trackId);
                         }
 
-                        Q_EMIT trackLabelsChanged(trackId);
+                        trackData.labelsRemovedIds.clear();
+                        trackData.futureForFetching = null;
+                        trackData.fetched = true;
 
-                        return labelIdsAsSet;
+                        bool haveRealChanges = trackData.labelIds.size() > oldSize;
+
+                        if (haveRealChanges)
+                            Q_EMIT trackLabelsChanged(trackId);
+
+                        return trackData.labelIds;
                     }
                 );
 
-        hashData.futureForFetching = future;
+        trackData.futureForFetching = future;
 
         return future;
     }

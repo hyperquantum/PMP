@@ -37,6 +37,7 @@ set(PMP_COMMON_SOURCES
     common/tagdata.cpp
     common/trackcriteria.cpp
     common/trackcriteriumevaluation.cpp
+    common/trackcriteriuminqueries.cpp
     common/trackcriteriumsimplification.cpp
     common/tribool.cpp
     common/util.cpp
@@ -108,6 +109,7 @@ set(PMP_CLIENT_HEADERS
     client/serverconnection.h
     client/serverdiscoverer.h
     client/serverinterface.h
+    client/trackidslistfetcher.h
     client/tracklabelscontroller.h
     client/userdatafetcher.h
     client/volumemediator.h

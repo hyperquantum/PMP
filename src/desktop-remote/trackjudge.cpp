@@ -20,9 +20,11 @@
 #include "trackjudge.h"
 
 #include "common/trackcriteriumevaluation.h"
+#include "common/trackcriteriuminqueries.h"
 #include "common/trackcriteriumsimplification.h"
 
 #include "client/collectiontrackinfo.h"
+#include "client/labelscontroller.h"
 #include "client/queuehashesmonitor.h"
 #include "client/userdatafetcher.h"
 
@@ -35,6 +37,7 @@ namespace PMP
     public:
         EvaluationContext(CollectionTrackInfo const& track,
                           UserDataFetcher& userDataFetcher,
+                          LabelsController& labelsController,
                           QueueHashesMonitor& queueHashesMonitor,
                           quint32 userId, bool _haveUserId);
 
@@ -52,9 +55,12 @@ namespace PMP
         bool isAvailable() const override;
         bool isPresentInQueue() const override;
 
+        TriBool hasLabel(quint32 labelId) const override;
+
     private:
         const CollectionTrackInfo& _track;
         UserDataFetcher& _userDataFetcher;
+        LabelsController& _labelsController;
         QueueHashesMonitor& _queueHashesMonitor;
         quint32 _userId;
         bool _haveUserId;
@@ -62,10 +68,12 @@ namespace PMP
 
     TrackJudge::EvaluationContext::EvaluationContext(const CollectionTrackInfo& track,
                                                      UserDataFetcher& userDataFetcher,
+                                                     LabelsController& labelsController,
                                                 QueueHashesMonitor& queueHashesMonitor,
                                                      quint32 userId, bool _haveUserId)
      : _track(track),
         _userDataFetcher(userDataFetcher),
+        _labelsController(labelsController),
         _queueHashesMonitor(queueHashesMonitor),
         _userId(userId),
         _haveUserId(_haveUserId)
@@ -143,6 +151,13 @@ namespace PMP
         return _queueHashesMonitor.isPresentInQueue(_track.hashId());
     }
 
+    TriBool TrackJudge::EvaluationContext::hasLabel(quint32 labelId) const
+    {
+        _labelsController.ensureFetchingOfTracksForLabel(labelId);
+
+        return _labelsController.tryCheckIfTrackHasLabel(_track.hashId(), labelId);
+    }
+
     /* ============================================================================ */
 
     void TrackJudge::setUserId(quint32 userId)
@@ -170,9 +185,14 @@ namespace PMP
         return true;
     }
 
-    bool TrackJudge::criteriumUsesUserData() const
+    bool TrackJudge::criteriumDependsOnUserData() const
     {
-        return _criteriumTree->usesUserData();
+        return TrackCriteriumInqueries::dependsOnUserData(*_criteriumTree);
+    }
+
+    bool TrackJudge::criteriumDependsOnLabel(quint32 labelId) const
+    {
+        return TrackCriteriumInqueries::dependsOnLabel(*_criteriumTree, labelId);
     }
 
     bool TrackJudge::criteriumResultsInAllTracks() const
@@ -182,8 +202,8 @@ namespace PMP
 
     TriBool TrackJudge::trackSatisfiesCriteria(CollectionTrackInfo const& track) const
     {
-        EvaluationContext context(track, _userDataFetcher, _queueHashesMonitor,
-                                  _userId, _haveUserId);
+        EvaluationContext context(track, _userDataFetcher, _labelsController,
+                                  _queueHashesMonitor, _userId, _haveUserId);
 
         TriBool result = TrackCriteriumEvaluator::evaluate(*_criteriumTree, context);
 

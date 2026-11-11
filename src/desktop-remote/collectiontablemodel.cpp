@@ -24,6 +24,7 @@
 
 #include "client/collectionwatcher.h"
 #include "client/currenttrackmonitor.h"
+#include "client/labelscontroller.h"
 #include "client/playercontroller.h"
 #include "client/queuehashesmonitor.h"
 #include "client/serverinterface.h"
@@ -101,7 +102,9 @@ namespace PMP
        _highlightColorIndex(0),
        _sortBy(0),
        _sortOrder(Qt::AscendingOrder),
-       _highlightingTrackJudge(serverInterface->userDataFetcher(), *queueHashesMonitor),
+       _highlightingTrackJudge(serverInterface->userDataFetcher(),
+                               serverInterface->labelsController(),
+                               *queueHashesMonitor),
        _queueHashesMonitor(queueHashesMonitor)
     {
         _collator.setCaseSensitivity(Qt::CaseInsensitive);
@@ -134,7 +137,7 @@ namespace PMP
                 _highlightingTrackJudge.setUserId(
                                            userForStatisticsDisplay->userId().valueOr(0));
 
-                if (_highlightingTrackJudge.criteriumUsesUserData())
+                if (_highlightingTrackJudge.criteriumDependsOnUserData())
                 {
                     markEverythingAsChanged();
                 }
@@ -177,6 +180,16 @@ namespace PMP
 
         connect(_queueHashesMonitor, &QueueHashesMonitor::hashInQueuePresenceChanged,
                 this, &SortedCollectionTableModel::onHashInQueuePresenceChanged);
+
+        auto& labelsController = serverInterface->labelsController();
+        connect(
+            &labelsController, &LabelsController::trackLabelsChanged,
+            this, &SortedCollectionTableModel::onTrackLabelsChanged
+        );
+        connect(
+            &labelsController, &LabelsController::labelTracksChanged,
+            this, &SortedCollectionTableModel::onLabelTracksChanged
+        );
 
         addWhenModelEmpty(collectionWatcher.getCollection().values());
     }
@@ -393,12 +406,12 @@ namespace PMP
     }
 
     void SortedCollectionTableModel::onUserTrackDataChanged(quint32 userId,
-                                                            LocalTrackId hashId)
+                                                            LocalTrackId trackId)
     {
         Q_UNUSED(userId)
         /* ignore the user ID for change notifications */
 
-        auto outerIndex = findOuterIndexForHash(hashId);
+        auto outerIndex = findOuterIndexForHash(trackId);
         if (outerIndex < 0)
             return; /* track is not in the list */
 
@@ -406,27 +419,46 @@ namespace PMP
                            createIndex(outerIndex, 4 - 1));
     }
 
-    void SortedCollectionTableModel::currentTrackInfoChanged(LocalTrackId hashId)
+    void SortedCollectionTableModel::currentTrackInfoChanged(LocalTrackId trackId)
     {
-        if (_currentTrackHash == hashId)
+        if (_currentTrackHash == trackId)
             return;
 
-        _currentTrackHash = hashId;
+        _currentTrackHash = trackId;
         markLeftColumnAsChanged();
     }
 
-    void SortedCollectionTableModel::onHashInQueuePresenceChanged(LocalTrackId hashId)
+    void SortedCollectionTableModel::onHashInQueuePresenceChanged(LocalTrackId trackId)
     {
-        qDebug() << "hash in queue presence changed: " << hashId
+        qDebug() << "track in queue presence changed: " << trackId
                  << "present?"
-                 << (_queueHashesMonitor->isPresentInQueue(hashId) ? "yes" : "no");
+                 << (_queueHashesMonitor->isPresentInQueue(trackId) ? "yes" : "no");
 
-        auto outerIndex = findOuterIndexForHash(hashId);
+        auto outerIndex = findOuterIndexForHash(trackId);
         if (outerIndex < 0)
             return; /* track is not in the list */
 
         Q_EMIT dataChanged(createIndex(outerIndex, 0),
                            createIndex(outerIndex, 0));
+    }
+
+    void SortedCollectionTableModel::onTrackLabelsChanged(LocalTrackId trackId)
+    {
+        qDebug() << "SortedCollectionTableModel: labels changed for track" << trackId;
+
+        auto outerIndex = findOuterIndexForHash(trackId);
+        if (outerIndex < 0)
+            return; /* track is not in the list */
+
+        markRowAsChanged(outerIndex);
+    }
+
+    void SortedCollectionTableModel::onLabelTracksChanged(quint32 labelId)
+    {
+        qDebug() << "SortedCollectionTableModel: tracks changed for label " << labelId;
+
+        if (_highlightingTrackJudge.criteriumDependsOnLabel(labelId))
+            markEverythingAsChanged();
     }
 
     int SortedCollectionTableModel::findOuterIndexMapIndexForInsert(
@@ -913,7 +945,9 @@ namespace PMP
        _collectionWatcher(&serverInterface->collectionWatcher()),
        _source(source),
        _searchData(searchData),
-       _filteringTrackJudge(serverInterface->userDataFetcher(), *queueHashesMonitor)
+       _filteringTrackJudge(serverInterface->userDataFetcher(),
+                            serverInterface->labelsController(),
+                            *queueHashesMonitor)
     {
         Q_UNUSED(parent)
         setFilterCaseSensitivity(Qt::CaseInsensitive);
@@ -926,13 +960,24 @@ namespace PMP
             {
                 _filteringTrackJudge.setUserId(
                                            userForStatisticsDisplay->userId().valueOr(0));
-                invalidateFilter();
+                invalidateRowsFilter();
             }
         );
 
         connect(
             _collectionWatcher, &CollectionWatcher::newTrackReceived,
             this, &FilteredCollectionTableModel::onNewTrackReceived
+        );
+
+        auto& labelsController = serverInterface->labelsController();
+        connect(
+            &labelsController, &LabelsController::labelTracksChanged,
+            this,
+            [this](quint32 labelId)
+            {
+                if (_filteringTrackJudge.criteriumDependsOnLabel(labelId))
+                    invalidateRowsFilter();
+            }
         );
 
         setSourceModel(source);

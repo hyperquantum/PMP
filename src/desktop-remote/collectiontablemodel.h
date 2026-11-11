@@ -89,9 +89,11 @@ namespace PMP
         void onNewTrackReceived(Client::CollectionTrackInfo track);
         void onTrackAvailabilityChanged(Client::LocalTrackId hashId, bool isAvailable);
         void onTrackDataChanged(Client::CollectionTrackInfo track);
-        void onUserTrackDataChanged(quint32 userId, Client::LocalTrackId hashId);
-        void currentTrackInfoChanged(Client::LocalTrackId hashId);
-        void onHashInQueuePresenceChanged(Client::LocalTrackId hashId);
+        void onUserTrackDataChanged(quint32 userId, Client::LocalTrackId trackId);
+        void currentTrackInfoChanged(Client::LocalTrackId trackId);
+        void onHashInQueuePresenceChanged(Client::LocalTrackId trackId);
+        void onTrackLabelsChanged(Client::LocalTrackId trackId);
+        void onLabelTracksChanged(quint32 labelId);
 
     private:
         void updateTrackAvailability(Client::LocalTrackId hashId, bool isAvailable);

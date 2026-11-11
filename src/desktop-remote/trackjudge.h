@@ -28,6 +28,7 @@
 namespace PMP::Client
 {
     class CollectionTrackInfo;
+    class LabelsController;
     class QueueHashesMonitor;
     class UserDataFetcher;
 }
@@ -38,9 +39,11 @@ namespace PMP
     {
     public:
         TrackJudge(Client::UserDataFetcher& userDataFetcher,
+                   Client::LabelsController& labelsController,
                    Client::QueueHashesMonitor& queueHashesMonitor)
          : _criteriumTree(ConstantTrackCriterium::allTracksMatch()),
            _userDataFetcher(userDataFetcher),
+           _labelsController(labelsController),
            _queueHashesMonitor(queueHashesMonitor),
            _userId(0),
            _haveUserId(false),
@@ -57,7 +60,8 @@ namespace PMP
 
         bool setCriterium(const TrackCriterium& criterium);
 
-        bool criteriumUsesUserData() const;
+        bool criteriumDependsOnUserData() const;
+        bool criteriumDependsOnLabel(quint32 labelId) const;
         bool criteriumResultsInAllTracks() const;
 
         TriBool trackSatisfiesCriteria(Client::CollectionTrackInfo const& track) const;
@@ -67,6 +71,7 @@ namespace PMP
 
         std::unique_ptr<TrackCriterium> _criteriumTree;
         Client::UserDataFetcher& _userDataFetcher;
+        Client::LabelsController& _labelsController;
         Client::QueueHashesMonitor& _queueHashesMonitor;
         quint32 _userId;
         bool _haveUserId;

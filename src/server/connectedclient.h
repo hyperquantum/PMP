@@ -42,6 +42,7 @@
 #include <QDateTime>
 #include <QHash>
 #include <QList>
+#include <QSet>
 #include <QSharedPointer>
 #include <QTcpSocket>
 #include <QVector>
@@ -56,6 +57,7 @@ namespace PMP::Server
     class Scrobbling;
     class ServerInterface;
     class ServerHealthMonitor;
+    class TrackIdsListSender;
     class Users;
 
     class ConnectedClient : public QObject
@@ -224,6 +226,7 @@ namespace PMP::Server
                                           QList<quint32> labelsRemovedIds);
         void sendLabelNamesReply(uint clientReference, QHash<quint32, QString> idToNames);
         void sendActiveLabelsReply(quint32 clientReference, QList<quint32> labelIds);
+        void sendLabelTracksResponse(quint32 clientReference, QList<uint> trackIds);
 
         void handleBinaryMessage(QByteArray const& message);
         void handleStandardBinaryMessage(ClientMessageType messageType,
@@ -274,6 +277,7 @@ namespace PMP::Server
         void parseTrackLabelsListRequest(QByteArray const& message);
         void parseLabelNamesRequest(QByteArray const& message);
         void parseActiveLabelsRequest(QByteArray const& message);
+        void parseLabelTracksFetchRequest(QByteArray const& message);
 
         void schedulePlayerStateNotification();
 
@@ -322,6 +326,25 @@ namespace PMP::Server
         Resolver* _resolver;
         QVector<FileHash> _hashes;
         int _currentIndex;
+    };
+
+    class TrackIdsListSender : public QObject
+    {
+        Q_OBJECT
+    public:
+        TrackIdsListSender(QSet<uint> trackIds, qsizetype batchSize, QObject* parent);
+
+    Q_SIGNALS:
+        void gotNextBatchToSend(QList<uint> trackIds);
+        void allSent();
+
+    private Q_SLOTS:
+        void sendNextBatch();
+
+    private:
+        QList<uint> _trackIds;
+        qsizetype _currentEndIndex;
+        qsizetype _batchSize;
     };
 }
 #endif
