@@ -78,6 +78,7 @@ void TestSortedCollectionTableModel::trackTitleUpdateCausesMoveUpward()
     UserForStatisticsDisplayMock userForStatisticsDisplay;
     UserDataFetcherMock userDataFetcher;
     CollectionWatcherMock collectionWatcher;
+    LabelsControllerMock labelsController;
 
     collectionWatcher.addTrack(createTrack(1, "B", "B"));
     collectionWatcher.addTrack(createTrack(2, "D", "D"));
@@ -90,6 +91,7 @@ void TestSortedCollectionTableModel::trackTitleUpdateCausesMoveUpward()
     serverInterface.setPlayerController(&playerController);
     serverInterface.setCollectionWatcher(&collectionWatcher);
     serverInterface.setCurrentTrackMonitor(&currentTrackMonitor);
+    serverInterface.setLabelsController(&labelsController);
 
     SortedCollectionTableModel model(nullptr, &serverInterface, &queueHashesMonitor,
                                      &userForStatisticsDisplay);
@@ -122,6 +124,7 @@ void TestSortedCollectionTableModel::trackTitleUpdateCausesNoMove_v1()
     UserForStatisticsDisplayMock userForStatisticsDisplay;
     UserDataFetcherMock userDataFetcher;
     CollectionWatcherMock collectionWatcher;
+    LabelsControllerMock labelsController;
 
     collectionWatcher.addTrack(createTrack(1, "B", "B"));
     collectionWatcher.addTrack(createTrack(2, "D", "D"));
@@ -134,6 +137,7 @@ void TestSortedCollectionTableModel::trackTitleUpdateCausesNoMove_v1()
     serverInterface.setPlayerController(&playerController);
     serverInterface.setCollectionWatcher(&collectionWatcher);
     serverInterface.setCurrentTrackMonitor(&currentTrackMonitor);
+    serverInterface.setLabelsController(&labelsController);
 
     SortedCollectionTableModel model(nullptr, &serverInterface, &queueHashesMonitor,
                                      &userForStatisticsDisplay);
@@ -166,6 +170,7 @@ void TestSortedCollectionTableModel::trackTitleUpdateCausesNoMove_v2()
     UserForStatisticsDisplayMock userForStatisticsDisplay;
     UserDataFetcherMock userDataFetcher;
     CollectionWatcherMock collectionWatcher;
+    LabelsControllerMock labelsController;
 
     collectionWatcher.addTrack(createTrack(1, "B", "B"));
     collectionWatcher.addTrack(createTrack(2, "D", "D"));
@@ -178,6 +183,7 @@ void TestSortedCollectionTableModel::trackTitleUpdateCausesNoMove_v2()
     serverInterface.setPlayerController(&playerController);
     serverInterface.setCollectionWatcher(&collectionWatcher);
     serverInterface.setCurrentTrackMonitor(&currentTrackMonitor);
+    serverInterface.setLabelsController(&labelsController);
 
     SortedCollectionTableModel model(nullptr, &serverInterface, &queueHashesMonitor,
                                      &userForStatisticsDisplay);
@@ -210,6 +216,7 @@ void TestSortedCollectionTableModel::trackTitleUpdateCausesMoveDownward()
     UserForStatisticsDisplayMock userForStatisticsDisplay;
     UserDataFetcherMock userDataFetcher;
     CollectionWatcherMock collectionWatcher;
+    LabelsControllerMock labelsController;
 
     collectionWatcher.addTrack(createTrack(1, "B", "B"));
     collectionWatcher.addTrack(createTrack(2, "D", "D"));
@@ -222,6 +229,7 @@ void TestSortedCollectionTableModel::trackTitleUpdateCausesMoveDownward()
     serverInterface.setPlayerController(&playerController);
     serverInterface.setCollectionWatcher(&collectionWatcher);
     serverInterface.setCurrentTrackMonitor(&currentTrackMonitor);
+    serverInterface.setLabelsController(&labelsController);
 
     SortedCollectionTableModel model(nullptr, &serverInterface, &queueHashesMonitor,
                                      &userForStatisticsDisplay);
@@ -254,6 +262,7 @@ void TestSortedCollectionTableModel::trackTitleUpdateCausesMoveToLastPosition()
     UserForStatisticsDisplayMock userForStatisticsDisplay;
     UserDataFetcherMock userDataFetcher;
     CollectionWatcherMock collectionWatcher;
+    LabelsControllerMock labelsController;
 
     collectionWatcher.addTrack(createTrack(1, "B", "B"));
     collectionWatcher.addTrack(createTrack(2, "D", "D"));
@@ -266,6 +275,7 @@ void TestSortedCollectionTableModel::trackTitleUpdateCausesMoveToLastPosition()
     serverInterface.setPlayerController(&playerController);
     serverInterface.setCollectionWatcher(&collectionWatcher);
     serverInterface.setCurrentTrackMonitor(&currentTrackMonitor);
+    serverInterface.setLabelsController(&labelsController);
 
     SortedCollectionTableModel model(nullptr, &serverInterface, &queueHashesMonitor,
                                      &userForStatisticsDisplay);
@@ -605,6 +615,82 @@ Future<CollectionTrackInfo, AnyResultMessageCode> CollectionWatcherMock::getTrac
 
 /* =========== */
 
+LabelsControllerMock::LabelsControllerMock()
+    : LabelsController(nullptr)
+{
+    //
+}
+
+SimpleFuture<AnyResultMessageCode> LabelsControllerMock::applyLabelToTrack(
+    LocalTrackId trackId, QString label)
+{
+    Q_UNUSED(trackId)
+    Q_UNUSED(label)
+    NOT_IMPLEMENTED
+}
+
+SimpleFuture<AnyResultMessageCode> LabelsControllerMock::removeLabelFromTrack(
+    LocalTrackId trackId, QString label)
+{
+    Q_UNUSED(trackId)
+    Q_UNUSED(label)
+    NOT_IMPLEMENTED
+}
+
+TriBool LabelsControllerMock::tryCheckIfTrackHasLabel(LocalTrackId trackId,
+                                                      quint32 labelId)
+{
+    Q_UNUSED(trackId)
+    Q_UNUSED(labelId)
+    NOT_IMPLEMENTED
+}
+
+Future<QList<QString>, AnyResultMessageCode> LabelsControllerMock::getLabelNamesByTrack(
+    LocalTrackId trackId)
+{
+    Q_UNUSED(trackId)
+    NOT_IMPLEMENTED
+}
+
+Future<QList<LabelIdAndName>, AnyResultMessageCode>
+    LabelsControllerMock::getLabelsByTrack(LocalTrackId trackId)
+{
+    Q_UNUSED(trackId)
+    NOT_IMPLEMENTED
+}
+
+void LabelsControllerMock::ensureFetchingOfTracksForLabel(quint32 labelId)
+{
+    Q_UNUSED(labelId)
+    NOT_IMPLEMENTED
+}
+
+Nullable<QString> LabelsControllerMock::tryGetLabelNameById(quint32 labelId)
+{
+    Q_UNUSED(labelId)
+    NOT_IMPLEMENTED
+}
+
+Future<QHash<quint32, QString>, AnyResultMessageCode>
+    LabelsControllerMock::getLabelNamesByIds(QList<quint32> labelIds)
+{
+    Q_UNUSED(labelIds)
+    NOT_IMPLEMENTED
+}
+
+Future<QList<QString>, AnyResultMessageCode> LabelsControllerMock::getActiveLabelNames()
+{
+    NOT_IMPLEMENTED
+}
+
+Future<QList<LabelIdAndName>, AnyResultMessageCode>
+    LabelsControllerMock::getActiveLabels()
+{
+    NOT_IMPLEMENTED
+}
+
+/* =========== */
+
 ServerInterfaceMock::ServerInterfaceMock()
 {
     //
@@ -628,6 +714,11 @@ void ServerInterfaceMock::setCollectionWatcher(CollectionWatcher* collectionWatc
 void ServerInterfaceMock::setCurrentTrackMonitor(CurrentTrackMonitor* currentTrackMonitor)
 {
     _currentTrackMonitor = currentTrackMonitor;
+}
+
+void ServerInterfaceMock::setLabelsController(LabelsController *labelsController)
+{
+    _labelsController = labelsController;
 }
 
 AuthenticationController& ServerInterfaceMock::authenticationController()
@@ -705,7 +796,9 @@ ScrobblingController& ServerInterfaceMock::scrobblingController()
 
 LabelsController& ServerInterfaceMock::labelsController()
 {
-    NOT_IMPLEMENTED
+    if (_labelsController) return *_labelsController;
+
+    Q_UNREACHABLE();
 }
 
 bool ServerInterfaceMock::isLoggedIn() const

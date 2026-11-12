@@ -22,6 +22,7 @@
 
 #include "client/collectionwatcher.h"
 #include "client/currenttrackmonitor.h"
+#include "client/labelscontroller.h"
 #include "client/playercontroller.h"
 #include "client/queuehashesmonitor.h"
 #include "client/serverinterface.h"
@@ -152,6 +153,33 @@ private:
     QHash<LocalTrackId, CollectionTrackInfo> _collection;
 };
 
+class LabelsControllerMock : public LabelsController
+{
+    Q_OBJECT
+public:
+    LabelsControllerMock();
+
+    SimpleFuture<AnyResultMessageCode> applyLabelToTrack(LocalTrackId trackId,
+                                                         QString label) override;
+    SimpleFuture<AnyResultMessageCode> removeLabelFromTrack(LocalTrackId trackId,
+                                                            QString label) override;
+
+    TriBool tryCheckIfTrackHasLabel(LocalTrackId trackId, quint32 labelId) override;
+    Future<QList<QString>, AnyResultMessageCode> getLabelNamesByTrack(
+        LocalTrackId trackId) override;
+    Future<QList<LabelIdAndName>, AnyResultMessageCode> getLabelsByTrack(
+        LocalTrackId trackId) override;
+
+    void ensureFetchingOfTracksForLabel(quint32 labelId) override;
+
+    Nullable<QString> tryGetLabelNameById(quint32 labelId) override;
+    Future<QHash<quint32,QString>, AnyResultMessageCode> getLabelNamesByIds(
+        QList<quint32> labelIds) override;
+
+    Future<QList<QString>, AnyResultMessageCode> getActiveLabelNames() override;
+    Future<QList<LabelIdAndName>, AnyResultMessageCode> getActiveLabels() override;
+};
+
 class ServerInterfaceMock : public PMP::Client::ServerInterface
 {
     Q_OBJECT
@@ -162,6 +190,7 @@ public:
     void setPlayerController(PlayerController* playerController);
     void setCollectionWatcher(CollectionWatcher* collectionWatcher);
     void setCurrentTrackMonitor(CurrentTrackMonitor* currentTrackMonitor);
+    void setLabelsController(LabelsController* labelsController);
 
     PMP::Client::AuthenticationController& authenticationController() override;
 
@@ -197,6 +226,7 @@ private:
     PlayerController* _playerController { nullptr };
     CollectionWatcher* _collectionWatcher { nullptr };
     CurrentTrackMonitor* _currentTrackMonitor { nullptr };
+    LabelsController* _labelsController { nullptr };
 };
 
 class TestSortedCollectionTableModel : public QObject
