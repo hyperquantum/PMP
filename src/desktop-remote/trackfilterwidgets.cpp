@@ -1054,7 +1054,7 @@ namespace PMP
                     _ignoreLabelComboBoxIndexChanges++;
 
                     QString labelTextToSelect;
-                    for (auto label : outcome.result())
+                    for (auto const& label : outcome.result())
                     {
                         _labelIdsToNames[label.id()] = label.name();
 
