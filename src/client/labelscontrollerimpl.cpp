@@ -19,6 +19,7 @@
 
 #include "labelscontrollerimpl.h"
 
+#include "collectionwatcher.h"
 #include "serverconnection.h"
 #include "trackidslistfetcher.h"
 
@@ -27,10 +28,16 @@
 
 namespace PMP::Client
 {
-    LabelsControllerImpl::LabelsControllerImpl(ServerConnection* connection)
-     : LabelsController(connection),
+    LabelsControllerImpl::LabelsControllerImpl(QObject* parent,
+                                               CollectionWatcher* collectionWatcher,
+                                               ServerConnection* connection)
+     : LabelsController(parent),
+       _collectionWatcher{collectionWatcher},
        _connection{connection}
     {
+        connect(_collectionWatcher, &CollectionWatcher::newTrackReceived,
+                this, &LabelsControllerImpl::onNewTrackReceived);
+
         connect(connection, &ServerConnection::trackLabelsChanged,
                 this, &LabelsControllerImpl::onTrackLabelsChanged);
     }
@@ -189,6 +196,26 @@ namespace PMP::Client
         return idAndNamesFuture;
     }
 
+    void LabelsControllerImpl::onNewTrackReceived(CollectionTrackInfo track)
+    {
+        for (auto it = _labelData.keyValueBegin(); it != _labelData.keyValueEnd(); ++it)
+        {
+            auto& labelData = it->second;
+
+            if (labelData.tracksFetched || labelData.fetchRequestSent)
+            {
+                auto labelId = it->first;
+
+                qDebug()
+                    << "LabelsControllerImpl: notification received about new track;"
+                    << "invalidating previous info about label" << labelId;
+
+                labelData.tracksFetched = false;
+                labelData.fetchRequestSent = false;
+            }
+        }
+    }
+
     void LabelsControllerImpl::onTrackLabelsChanged(LocalTrackId trackId,
                                                     QList<quint32> labelsAddedIds,
                                                     QList<quint32> labelsRemovedIds)
@@ -227,6 +254,9 @@ namespace PMP::Client
         auto& labelData = _labelData[labelId];
         if (labelData.tracksFetched || labelData.fetchRequestSent)
             return;
+
+        qDebug() << "LabelsControllerImpl: requesting a list of all tracks having label"
+                 << labelId;
 
         auto* fetcher = new TrackIdsListFetcher();
 

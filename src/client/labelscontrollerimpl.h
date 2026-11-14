@@ -22,6 +22,8 @@
 
 #include "labelscontroller.h"
 
+#include "collectiontrackinfo.h"
+
 #include "common/future.h"
 #include "common/nullable.h"
 
@@ -32,13 +34,16 @@
 
 namespace PMP::Client
 {
+    class CollectionWatcher;
     class ServerConnection;
 
     class LabelsControllerImpl : public LabelsController
     {
         Q_OBJECT
     public:
-        explicit LabelsControllerImpl(ServerConnection* connection);
+        explicit LabelsControllerImpl(QObject* parent,
+                                      CollectionWatcher* collectionWatcher,
+                                      ServerConnection* connection);
 
         SimpleFuture<AnyResultMessageCode> applyLabelToTrack(LocalTrackId trackId,
                                                              QString label) override;
@@ -61,6 +66,7 @@ namespace PMP::Client
         Future<QList<LabelIdAndName>, AnyResultMessageCode> getActiveLabels() override;
 
     private Q_SLOTS:
+        void onNewTrackReceived(CollectionTrackInfo track);
         void onTrackLabelsChanged(LocalTrackId trackId, QList<quint32> labelsAddedIds,
                                   QList<quint32> labelsRemovedIds);
 
@@ -113,6 +119,7 @@ namespace PMP::Client
         QList<LabelIdAndName> convertLabelIdsToLabelIdAndNamesAssumingFetched(
             TContainer labelIds);
 
+        CollectionWatcher* _collectionWatcher;
         ServerConnection* _connection;
         QHash<quint32, LabelData> _labelData;
         QHash<QString, quint32> _labelNameToId;

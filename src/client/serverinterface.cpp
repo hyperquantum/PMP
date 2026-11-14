@@ -183,10 +183,13 @@ namespace PMP::Client
         return *_scrobblingController;
     }
 
-    LabelsController &ServerInterfaceImpl::labelsController()
+    LabelsController& ServerInterfaceImpl::labelsController()
     {
         if (!_labelsController)
-            _labelsController = new LabelsControllerImpl(_connection);
+        {
+            _labelsController =
+                new LabelsControllerImpl(this, &collectionWatcher(), _connection);
+        }
 
         return *_labelsController;
     }
