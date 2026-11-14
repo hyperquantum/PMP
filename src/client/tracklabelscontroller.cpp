@@ -58,7 +58,7 @@ namespace PMP::Client
         QList<QString> result;
         result.reserve(_labels.size());
 
-        for (auto const& label : _labels)
+        for (auto const& label : std::as_const(_labels))
         {
             result << label.name();
         }
@@ -115,7 +115,7 @@ namespace PMP::Client
 
         QList<QString> namesRemoved;
 
-        for (auto const& label : _labels)
+        for (auto const& label : std::as_const(_labels))
         {
             if (!asHash.contains(label.id()))
                 namesRemoved << label.name();
