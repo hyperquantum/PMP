@@ -198,6 +198,8 @@ namespace PMP::Client
 
     void LabelsControllerImpl::onNewTrackReceived(CollectionTrackInfo track)
     {
+        Q_UNUSED(track)
+
         for (auto it = _labelData.keyValueBegin(); it != _labelData.keyValueEnd(); ++it)
         {
             auto& labelData = it->second;

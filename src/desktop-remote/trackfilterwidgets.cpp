@@ -348,6 +348,8 @@ namespace PMP
     void FilterLabelWidget::CriteriumCaptionGenerator::visit(
         const CompositeTrackCriterium& criterium)
     {
+        Q_UNUSED(criterium)
+
         // This function should not be called, because the composite criterium cannot be
         // put inside a FilterLineWidget yet
         Q_UNREACHABLE();
