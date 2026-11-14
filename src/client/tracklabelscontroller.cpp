@@ -79,6 +79,9 @@ namespace PMP::Client
 
     void TrackLabelsController::onTrackLabelsChanged(LocalTrackId trackId)
     {
+        if (trackId != _trackId)
+            return; /* not relevant to us */
+
         auto labelsFuture = _labelsController->getLabelsByTrack(trackId);
 
         labelsFuture.handleOnEventLoop(

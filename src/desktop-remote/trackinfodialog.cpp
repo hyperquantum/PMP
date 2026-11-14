@@ -372,6 +372,8 @@ namespace PMP
             {
                 for (auto const& labelName : labelNames)
                 {
+                    qDebug() << "TrackInfoDialog: label to add is" << labelName;
+
                     _ui->labelsListWidget->addItem(labelName);
                 }
             }
@@ -388,8 +390,8 @@ namespace PMP
                             labelName, Qt::MatchFixedString | Qt::MatchCaseSensitive
                         );
 
-                    qDebug() << "label to remove is" << labelName << "; found items:"
-                             << itemsToRemove.size();
+                    qDebug() << "TrackInfoDialog: label to remove is" << labelName
+                             << "; found items:" << itemsToRemove.size();
 
                     qDeleteAll(itemsToRemove);
                 }
