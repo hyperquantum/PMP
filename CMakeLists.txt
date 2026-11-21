@@ -23,6 +23,14 @@ project(PMP)
 
 include(GNUInstallDirs)
 
+# install documentation
+install(FILES
+    README.md
+    CHANGELOG.md
+    LICENSE
+    DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/doc/pmp"
+)
+
 enable_testing()
 
 set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
