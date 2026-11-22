@@ -38,6 +38,10 @@ install(FILES
     CHANGELOG.md
     DESTINATION "${CMAKE_INSTALL_DOCDIR}"
 )
+install(FILES
+    examples/PMP-Server.ini.example
+    DESTINATION "${CMAKE_INSTALL_DOCDIR}/examples"
+)
 
 enable_testing()
 

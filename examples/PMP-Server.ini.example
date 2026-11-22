@@ -1,0 +1,28 @@
+# Example configuration file for the PMP server.
+# Copy this file to the configuration directory of the OS user
+# that runs the PMP server.
+
+[General]
+# use server caption to distinguish between different servers;
+# it is completely optional
+server_caption=
+#server_caption=Living room laptop
+
+[Database]
+# enter hostname, username and password for MySQL
+# make sure the MySQL user has a password, as password must be non-empty
+hostname=localhost
+username=root
+password=REPLACE_WITH_YOUR_MYSQL_PASSWORD
+# the default port will be used if port is empty
+#port=
+
+[Media]
+# list the directories where music files are to be found
+# on Windows, make sure not to use backslashes in path names
+scan_directories=/home/myname/Music
+#scan_directories=C:/Users/myname/Music, C:/Users/Public/Music
+
+[Player]
+# player volume at startup; value must be in the range 0-100
+default_volume=100
