@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2018-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -65,9 +65,11 @@ namespace PMP::Server
                        << "with error text:" << _reply->errorString();
         }
 
+        /*
         qDebug() << "Last.Fm reply consists of" << replyData.size() << "bytes,"
                  << replyText.size() << "characters:\n"
                  << replyText;
+        */
 
         if (error != QNetworkReply::NoError && replyText.size() == 0)
         {
@@ -251,8 +253,8 @@ namespace PMP::Server
             return;
         }
 
-        qDebug() << "session.name:" << nameNode.text();
-        qDebug() << "session.key:" << keyNode.text();
+        //qDebug() << "session.name:" << nameNode.text();
+        //qDebug() << "session.key:" << keyNode.text();
 
         LastFmAuthenticationResult result;
         result.username = nameNode.text();
@@ -625,7 +627,7 @@ namespace PMP::Server
             parametersString = parametersString.mid(1);
         parametersString.replace('+', "%2B"); /* '+' was not encoded yet */
 
-        qDebug() << "parameters:" << parametersString;
+        //qDebug() << "parameters:" << parametersString;
         return _networkAccessManager->post(request, parametersString);
     }
 
@@ -679,8 +681,8 @@ namespace PMP::Server
 
         auto hash = QCryptographicHash::hash(signData, QCryptographicHash::Md5);
 
-        qDebug() << "Last.Fm signature data:" << QString::fromUtf8(signData);
-        qDebug() << "Last.Fm signature generated:" << hash.toHex();
+        //qDebug() << "Last.Fm signature data:" << QString::fromUtf8(signData);
+        //qDebug() << "Last.Fm signature generated:" << hash.toHex();
         parameters << QPair<QString, QString>("api_sig", hash.toHex());
     }
 
