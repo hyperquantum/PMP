@@ -1,6 +1,7 @@
 # binaries
 bin/*
 !bin/.empty
+bin-deb/
 build/
 
 # IDE stuff
