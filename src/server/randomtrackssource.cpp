@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -60,7 +60,7 @@ namespace PMP::Server
         scheduleNotificationsCheck();
     }
 
-    FileHash RandomTracksSource::takeTrack()
+    Nullable<FileHash> RandomTracksSource::takeTrack()
     {
         if (_unusedHashes.isEmpty())
         {
@@ -69,7 +69,10 @@ namespace PMP::Server
 
             /* still empty? */
             if (_unusedHashes.isEmpty())
-                return FileHash(); /* no result */
+            {
+                qDebug() << "RandomTracksSource: have no tracks to return";
+                return null; /* no result */
+            }
         }
 
         auto hash = _unusedHashes.takeLast();

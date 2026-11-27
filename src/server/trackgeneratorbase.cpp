@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2020-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -115,14 +115,18 @@ namespace PMP::Server
 
     QSharedPointer<TrackGeneratorBase::Candidate> TrackGeneratorBase::createCandidate()
     {
-        auto hash = _source->takeTrack();
+        auto hashOrNull = _source->takeTrack();
 
-        if (hash.isNull())
+        if (hashOrNull == null)
         {
-            qWarning() << "the null hash turned up as a potential candidate";
-            _source->putBackUsedTrack(hash);
-            return nullptr;
+            return nullptr; /* the source came up empty */
         }
+
+        auto hash = hashOrNull.value();
+
+        Q_ASSERT_X(hash.isNull() == false,
+                   "TrackGeneratorBase::createCandidate",
+                   "got null hash as candidate track");
 
         if (!_resolver->haveFileForHash(hash))
         {

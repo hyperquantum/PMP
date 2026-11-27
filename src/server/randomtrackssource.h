@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,10 +17,11 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_RANDOMTRACKSSOURCE_H
-#define PMP_RANDOMTRACKSSOURCE_H
+#ifndef PMP_SERVER_RANDOMTRACKSSOURCE_H
+#define PMP_SERVER_RANDOMTRACKSSOURCE_H
 
 #include "common/filehash.h"
+#include "common/nullable.h"
 
 #include <QHash>
 #include <QObject>
@@ -41,7 +42,7 @@ namespace PMP::Server
 
         int totalTrackCount() const { return _hashesStatus.size(); }
 
-        FileHash takeTrack();
+        Nullable<FileHash> takeTrack();
 
         void putBackUsedTrack(const FileHash& hash);
         void putBackUnusedTrack(const FileHash& hash);
