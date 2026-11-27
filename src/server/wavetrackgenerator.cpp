@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -71,7 +71,7 @@ namespace PMP::Server
 
         calculateProgressAndEmitSignal();
 
-        qDebug() << "delivering" << tracks.size() << "tracks now";
+        qDebug() << "WaveTrackGenerator: delivering" << tracks.size() << "tracks now";
         return tracks;
     }
 
@@ -80,7 +80,7 @@ namespace PMP::Server
         if (_waveActive)
             return;
 
-        qDebug() << "starting wave";
+        qDebug() << "WaveTrackGenerator: starting wave";
 
         _waveActive = true;
         _waveGenerationCompleted = false;
@@ -99,7 +99,7 @@ namespace PMP::Server
         if (!_waveActive)
             return;
 
-        qDebug() << "terminating wave";
+        qDebug() << "WaveTrackGenerator: terminating wave";
 
         _waveActive = false;
 
@@ -161,7 +161,7 @@ namespace PMP::Server
         auto fromSourceCount = tracks.size();
         _buffer.append(tracks);
 
-        qDebug() << "tried to get" << tracksToTakeFromSource
+        qDebug() << "WaveTrackGenerator: tried to get" << tracksToTakeFromSource
                  << "tracks from source, got" << fromSourceCount
                  << "after filtering, buffer size is now" << _buffer.size();
 
@@ -175,7 +175,8 @@ namespace PMP::Server
             return; // count failures
         }
 
-        qDebug() << "failed to gather enough tracks that satisfy the criteria; giving up";
+        qDebug() << "WaveTrackGenerator: failed to gather enough tracks that satisfy the "
+                    "criteria; giving up";
         terminateWave();
     }
 
@@ -190,8 +191,8 @@ namespace PMP::Server
                                          return selectionFilterCompare(a, b);
                                      });
 
-        qDebug() << "applied selection filter to buffer; reduced size from"
-                 << oldBufferSize << "to" << tracks.size();
+        qDebug() << "WaveTrackGenerator: applied selection filter to buffer; reduced size"
+                    " from" << oldBufferSize << "to" << tracks.size();
 
         for (auto const& track : std::as_const(tracks))
         {
@@ -201,28 +202,29 @@ namespace PMP::Server
 
         _buffer.clear();
 
-        qDebug() << "generation progress is now" << _trackGenerationProgress;
+        qDebug() << "WaveTrackGenerator: generation progress is now"
+                 << _trackGenerationProgress;
     }
 
     void WaveTrackGenerator::calculateProgressAndEmitSignal()
     {
         if (!_waveGenerationCompleted) /* final size not known yet */
         {
-            qDebug() << "wave progress: delivered" << _tracksDeliveredCount
-                     << "of an unknown total";
+            qDebug() << "WaveTrackGenerator: wave progress: delivered"
+                     << _tracksDeliveredCount << "of an unknown total";
         }
         else if (!_upcoming.isEmpty())
         {
             int total = _tracksDeliveredCount + _upcoming.size();
-            qDebug() << "wave progress: delivered" << _tracksDeliveredCount
-                     << "of" << total;
+            qDebug() << "WaveTrackGenerator: wave progress: delivered"
+                     << _tracksDeliveredCount << "of" << total;
 
             Q_EMIT waveProgress(_tracksDeliveredCount, total);
         }
         else /* wave completed */
         {
-            qDebug() << "wave is now complete; delivered" << _tracksDeliveredCount
-                     << "tracks";
+            qDebug() << "WaveTrackGenerator: wave is now complete; delivered"
+                     << _tracksDeliveredCount << "tracks";
 
             _waveActive = false;
 
@@ -255,7 +257,7 @@ namespace PMP::Server
 
         auto newUpcomingSize = _upcoming.size();
 
-        qDebug() << "dynamic mode wave criteria changed; removed"
+        qDebug() << "WaveTrackGenerator: dynamic mode wave criteria changed; removed"
                  << (oldUpcomingSize - newUpcomingSize)
                  << "tracks from the upcoming list,"
                  << newUpcomingSize << "tracks are remaining";
@@ -297,7 +299,7 @@ namespace PMP::Server
         auto maybeUserStats = history().getUserStats(id, criteria().user());
         if (maybeUserStats.isNull())
         {
-            qDebug() << "rejecting candidate" << id
+            qDebug() << "WaveTrackGenerator: rejecting candidate" << id
                      << "because we don't have its user data yet";
             return false;
         }
@@ -318,5 +320,4 @@ namespace PMP::Server
 
         return true;
     }
-
 }

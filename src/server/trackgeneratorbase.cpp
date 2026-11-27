@@ -71,7 +71,7 @@ namespace PMP::Server
         if (criteria == _criteria)
             return;
 
-        qDebug() << "criteria changing";
+        qDebug() << "TrackGeneratorBase: criteria changing";
 
         _criteria = criteria;
         criteriaChanged();
@@ -82,7 +82,8 @@ namespace PMP::Server
         if (trackCount == _desiredUpcomingTrackCount)
             return;
 
-        qDebug() << "target size for upcoming tracks list set to" << trackCount;
+        qDebug() << "TrackGeneratorBase: target size for upcoming tracks list set to"
+                 << trackCount;
 
         _desiredUpcomingTrackCount = trackCount;
         desiredUpcomingCountChanged();
@@ -130,7 +131,7 @@ namespace PMP::Server
 
         if (!_resolver->haveFileForHash(hash))
         {
-            qDebug() << "cannot use hash" << hash
+            qDebug() << "TrackGeneratorBase: cannot use hash" << hash
                      << "as a candidate because we don't have a file for it";
             _source->putBackUsedTrack(hash);
             return nullptr;
@@ -139,7 +140,7 @@ namespace PMP::Server
         uint id = _resolver->getID(hash);
         if (id <= 0)
         {
-            qDebug() << "cannot use hash" << hash
+            qDebug() << "TrackGeneratorBase: cannot use hash" << hash
                      << "as a candidate because it hasn't been registered";
             _source->putBackUsedTrack(hash);
             return nullptr;
@@ -181,7 +182,7 @@ namespace PMP::Server
 
         if (allOrNothing)
         {
-            qDebug() << "ran out of attempts; got" << tracks.size()
+            qDebug() << "TrackGeneratorBase: ran out of attempts; got" << tracks.size()
                      << "out of" << trackCount << "; giving them back to the source";
 
             // ran out of attempts, put everything back for the next attempt
@@ -192,7 +193,7 @@ namespace PMP::Server
         }
         else
         {
-            qDebug() << "ran out of attempts; got" << tracks.size()
+            qDebug() << "TrackGeneratorBase: ran out of attempts; got" << tracks.size()
                      << "out of" << trackCount;
 
             return tracks;
@@ -309,5 +310,4 @@ namespace PMP::Server
 
         return result;
     }
-
 }

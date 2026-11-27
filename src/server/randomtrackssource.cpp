@@ -54,7 +54,7 @@ namespace PMP::Server
             _hashesStatus.insert(hash, TrackStatus::Unused);
         }
 
-        qDebug() << "random tracks source initialized; track count: "
+        qDebug() << "RandomTracksSource: random tracks source initialized; track count: "
                  << _unusedHashes.size();
 
         scheduleNotificationsCheck();
@@ -90,8 +90,8 @@ namespace PMP::Server
 
         if (unusedHashCount % 10 == 0)
         {
-            qDebug() << "unused tracks list down to" << unusedHashCount
-                     << "elements; taken count:" << takenCount
+            qDebug() << "RandomTracksSource: unused tracks list down to"
+                     << unusedHashCount << "elements; taken count:" << takenCount
                      << "; used count:" << usedHashCount
                      << "; notified count:" << _notifiedCount;
         }
@@ -106,8 +106,8 @@ namespace PMP::Server
         auto status = getTrackStatus(hash);
         if (status != TrackStatus::Taken)
         {
-            qWarning() << "track status for hash" << hash << "expected to be Taken but is"
-                       << int(status);
+            qWarning() << "RandomTracksSource: track status for hash" << hash
+                       << "expected to be Taken but is" << int(status);
             return;
         }
 
@@ -120,8 +120,8 @@ namespace PMP::Server
         auto status = getTrackStatus(hash);
         if (status != TrackStatus::Taken)
         {
-            qWarning() << "track status for hash" << hash << "expected to be Taken but is"
-                       << int(status);
+            qWarning() << "RandomTracksSource: track status for hash" << hash
+                       << "expected to be Taken but is" << int(status);
             return;
         }
 
@@ -145,7 +145,7 @@ namespace PMP::Server
 
     void RandomTracksSource::resetUpcomingTrackNotifications()
     {
-        qDebug() << "resetting notified count";
+        qDebug() << "RandomTracksSource: resetting notified count";
         _notifiedCount = 0;
         scheduleNotificationsCheck();
     }
@@ -176,8 +176,8 @@ namespace PMP::Server
 
         if (nextNotificationIndex < -1)
         {
-            qWarning() << "reducing notified count from" << _notifiedCount
-                       << "to" << _unusedHashes.size();
+            qWarning() << "RandomTracksSource: reducing notified count from"
+                       << _notifiedCount << "to" << _unusedHashes.size();
             _notifiedCount = _unusedHashes.size();
             return;
         }
@@ -195,7 +195,7 @@ namespace PMP::Server
                 break;
         }
 
-        qDebug() << "notified count has reached" << _notifiedCount;
+        qDebug() << "RandomTracksSource: notified count has reached" << _notifiedCount;
 
         scheduleNotificationsCheck();
     }
@@ -239,7 +239,7 @@ namespace PMP::Server
 
     void RandomTracksSource::markUsedTracksAsUnusedAgain()
     {
-        qDebug() << "rebuilding list of unused tracks";
+        qDebug() << "RandomTracksSource: rebuilding list of unused tracks";
 
         for (auto it = _hashesStatus.begin(); it != _hashesStatus.end(); ++it)
         {
@@ -263,5 +263,4 @@ namespace PMP::Server
         _pendingNotificationsCheck = true;
         QTimer::singleShot(0, this, &RandomTracksSource::checkNotifications);
     }
-
 }
