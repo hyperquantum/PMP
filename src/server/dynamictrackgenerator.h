@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,8 +17,8 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_DYNAMICTRACKGENERATOR_H
-#define PMP_DYNAMICTRACKGENERATOR_H
+#ifndef PMP_SERVER_DYNAMICTRACKGENERATOR_H
+#define PMP_SERVER_DYNAMICTRACKGENERATOR_H
 
 #include "trackgeneratorbase.h"
 
