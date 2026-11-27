@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,8 +17,8 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_GENERATOR_H
-#define PMP_GENERATOR_H
+#ifndef PMP_SERVER_GENERATOR_H
+#define PMP_SERVER_GENERATOR_H
 
 #include "common/filehash.h"
 
@@ -92,7 +92,7 @@ namespace PMP::Server
 
         RandomTracksSource* _randomTracksSource;
         TrackRepetitionChecker* _repetitionChecker;
-        DynamicTrackGenerator* _trackGenerator;
+        DynamicTrackGenerator* _regularTrackGenerator;
         WaveTrackGenerator* _waveTrackGenerator;
         PlayerQueue* _queue;
         Resolver* _resolver;

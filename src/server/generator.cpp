@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -47,8 +47,9 @@ namespace PMP::Server
     Generator::Generator(PlayerQueue* queue, Resolver* resolver, History* history)
      : _randomTracksSource(new RandomTracksSource(this, resolver)),
        _repetitionChecker(new TrackRepetitionChecker(this, queue, history)),
-       _trackGenerator(new DynamicTrackGenerator(this, _randomTracksSource, resolver,
-                                                 history, _repetitionChecker)),
+       _regularTrackGenerator(new DynamicTrackGenerator(this, _randomTracksSource,
+                                                        resolver, history,
+                                                        _repetitionChecker)),
        _waveTrackGenerator(new WaveTrackGenerator(this, _randomTracksSource, resolver,
                                                   history, _repetitionChecker)),
        _queue(queue),
@@ -63,7 +64,7 @@ namespace PMP::Server
         _criteria.setNoRepetitionSpanSeconds(defaultNoRepetitionSpanSeconds);
         _repetitionChecker->setNoRepetitionSpanSeconds(defaultNoRepetitionSpanSeconds);
 
-        _trackGenerator->setCriteria(_criteria);
+        _regularTrackGenerator->setCriteria(_criteria);
         _waveTrackGenerator->setCriteria(_criteria);
 
         connect(
@@ -151,7 +152,7 @@ namespace PMP::Server
 
         setDesiredUpcomingCount();
 
-        _trackGenerator->enable();
+        _regularTrackGenerator->enable();
 
         checkQueueRefillNeeded();
         saveUserPreferences();
@@ -167,7 +168,7 @@ namespace PMP::Server
         qDebug() << "Generator disabled";
         _enabled = false;
 
-        _trackGenerator->disable();
+        _regularTrackGenerator->disable();
         _waveTrackGenerator->terminateWave();
 
         saveUserPreferences();
@@ -198,7 +199,7 @@ namespace PMP::Server
 
         if (!_waveActive)
         {
-            auto tracks = _trackGenerator->getTracks(expandCount - generatedCount);
+            auto tracks = _regularTrackGenerator->getTracks(expandCount - generatedCount);
             generatedCount += tracks.size();
 
             for (auto const& track : std::as_const(tracks))
@@ -276,7 +277,7 @@ namespace PMP::Server
                  << "to" << seconds;
 
         _repetitionChecker->setNoRepetitionSpanSeconds(seconds);
-        _trackGenerator->setCriteria(_criteria);
+        _regularTrackGenerator->setCriteria(_criteria);
         _waveTrackGenerator->setCriteria(_criteria);
 
         saveUserPreferences();
@@ -312,7 +313,7 @@ namespace PMP::Server
         auto tracks =
                 _waveActive
                     ? _waveTrackGenerator->getTracks(tracksToGenerate)
-                    : _trackGenerator->getTracks(tracksToGenerate);
+                    : _regularTrackGenerator->getTracks(tracksToGenerate);
 
         for (auto const& track : std::as_const(tracks))
         {
@@ -339,7 +340,7 @@ namespace PMP::Server
     {
         int count = std::max(desiredQueueLength + expandCount, 3 * expandCount);
 
-        _trackGenerator->setDesiredUpcomingCount(count);
+        _regularTrackGenerator->setDesiredUpcomingCount(count);
         _waveTrackGenerator->setDesiredUpcomingCount(count);
     }
 
@@ -370,12 +371,12 @@ namespace PMP::Server
         _randomTracksSource->resetUpcomingTrackNotifications();
 
         /* give us some time to fetch track stats for the new user */
-        _trackGenerator->freezeTemporarily();
+        _regularTrackGenerator->freezeTemporarily();
 
         _repetitionChecker->setUserGeneratingFor(user);
         _repetitionChecker->setNoRepetitionSpanSeconds(
                                                      _criteria.noRepetitionSpanSeconds());
-        _trackGenerator->setCriteria(_criteria);
+        _regularTrackGenerator->setCriteria(_criteria);
         _waveTrackGenerator->setCriteria(_criteria);
 
         if (oldCriteria.noRepetitionSpanSeconds() != _criteria.noRepetitionSpanSeconds())
